@@ -27,7 +27,6 @@ export default function SettingsScreen() {
   const [lists, setLists] = useState<ListData[]>([]);
   const [showAddListModal, setShowAddListModal] = useState(false);
   const [newListName, setNewListName] = useState('');
-  const [newListColor, setNewListColor] = useState('#2563EB');
   const [newListColor, setNewListColor] = useState('#14B8A6');
 
   const colors = [
