@@ -67,7 +67,7 @@ export default function SettingsScreen() {
       await StorageService.addList(newListName.trim(), newListColor);
       await loadLists();
       setNewListName('');
-      setNewListColor('#2563EB');
+      setNewListColor('#14B8A6');
       setShowAddListModal(false);
     }
   };

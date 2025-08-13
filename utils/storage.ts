@@ -29,9 +29,10 @@ export class StorageService {
       const newNote: Note = {
         id: Date.now().toString(),
         text,
-        completed: false,
-        createdAt: new Date().toISOString(),
         listName,
+        completed: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
       notes.push(newNote);
       await this.saveNotes(notes);
@@ -45,7 +46,11 @@ export class StorageService {
       const notes = await this.getNotes();
       const noteIndex = notes.findIndex(note => note.id === id);
       if (noteIndex !== -1) {
-        notes[noteIndex] = { ...notes[noteIndex], ...updates };
+        notes[noteIndex] = { 
+          ...notes[noteIndex], 
+          ...updates, 
+          updatedAt: new Date() 
+        };
         await this.saveNotes(notes);
       }
     } catch (error) {
@@ -149,7 +154,11 @@ export class StorageService {
     try {
       const notes = await this.getNotes();
       return notes
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .sort((a, b) => {
+          const dateA = typeof a.createdAt === 'string' ? new Date(a.createdAt) : a.createdAt;
+          const dateB = typeof b.createdAt === 'string' ? new Date(b.createdAt) : b.createdAt;
+          return dateB.getTime() - dateA.getTime();
+        })
         .slice(0, limit);
     } catch (error) {
       console.error('Error loading recent notes:', error);

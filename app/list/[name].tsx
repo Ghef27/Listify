@@ -77,6 +77,7 @@ export default function ListScreen() {
   const handleAddNote = async (text: string, listName: string) => {
     await StorageService.addNote(text, listName);
     await loadNotes();
+    await loadNotes();
   };
 
   const handleEditList = () => {
