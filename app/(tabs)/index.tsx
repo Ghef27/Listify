@@ -1,0 +1,243 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  ScrollView, 
+  TouchableOpacity, 
+  StyleSheet, 
+  RefreshControl 
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { ChevronRight, Clock } from 'lucide-react-native';
+import { StorageService } from '@/utils/storage';
+import { FloatingActionButton } from '@/components/FloatingActionButton';
+import { AddNoteModal } from '@/components/AddNoteModal';
+import { NoteItem } from '@/components/NoteItem';
+import { Note, ListData } from '@/types';
+
+export default function HomeScreen() {
+  const router = useRouter();
+  const [lists, setLists] = useState<ListData[]>([]);
+  const [recentNotes, setRecentNotes] = useState<Note[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(async () => {
+    const [listsData, notes] = await Promise.all([
+      StorageService.getLists(),
+      StorageService.getNotes()
+    ]);
+    
+    // Calculate note counts for each list
+    const listsWithCounts = listsData.map(list => ({
+      ...list,
+      count: notes.filter(note => note.listName === list.name && !note.completed).length
+    }));
+    
+    setLists(listsWithCounts);
+    
+    // Get recent notes (last 5)
+    const recent = await StorageService.getRecentNotes(5);
+    setRecentNotes(recent);
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
+
+  const handleAddNote = async (text: string, listName: string) => {
+    await StorageService.addNote(text, listName);
+    await loadData();
+  };
+
+  const handleToggleComplete = async (noteId: string) => {
+    const note = recentNotes.find(n => n.id === noteId);
+    if (note) {
+      await StorageService.updateNote(noteId, { completed: !note.completed });
+      await loadData();
+    }
+  };
+
+  const navigateToList = (listName: string) => {
+    router.push(`/list/${encodeURIComponent(listName)}`);
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Listify</Text>
+        <Text style={styles.subtitle}>Your notes & lists</Text>
+      </View>
+
+      <ScrollView 
+        style={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Your Lists</Text>
+          {lists.map((list) => (
+            <TouchableOpacity
+              key={list.name}
+              style={styles.listItem}
+              onPress={() => navigateToList(list.name)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.listLeft}>
+                <View style={[styles.colorDot, { backgroundColor: list.color }]} />
+                <View>
+                  <Text style={styles.listName}>{list.name}</Text>
+                  <Text style={styles.listCount}>
+                    {list.count} {list.count === 1 ? 'item' : 'items'}
+                  </Text>
+                </View>
+              </View>
+              <ChevronRight size={20} color="#9CA3AF" />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {recentNotes.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Clock size={20} color="#6B7280" />
+              <Text style={styles.sectionTitle}>Recent Notes</Text>
+            </View>
+            {recentNotes.map((note) => (
+              <NoteItem
+                key={note.id}
+                note={note}
+                onToggleComplete={handleToggleComplete}
+                onPress={(note) => navigateToList(note.listName)}
+              />
+            ))}
+          </View>
+        )}
+
+        {lists.length === 0 && recentNotes.length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>Welcome to Listify!</Text>
+            <Text style={styles.emptyText}>
+              Start by creating your first note. Tap the + button below to get started.
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      <FloatingActionButton onPress={() => setShowAddModal(true)} />
+
+      <AddNoteModal
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={handleAddNote}
+        lists={lists}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  content: {
+    flex: 1,
+  },
+  section: {
+    marginTop: 24,
+    marginHorizontal: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginLeft: 8,
+  },
+  listItem: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  listLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  colorDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  listName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  listCount: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+});
