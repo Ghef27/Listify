@@ -1,0 +1,159 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Note, ListData } from '@/types';
+
+const NOTES_KEY = 'listify_notes';
+const LISTS_KEY = 'listify_lists';
+
+export class StorageService {
+  static async getNotes(): Promise<Note[]> {
+    try {
+      const notesJson = await AsyncStorage.getItem(NOTES_KEY);
+      return notesJson ? JSON.parse(notesJson) : [];
+    } catch (error) {
+      console.error('Error loading notes:', error);
+      return [];
+    }
+  }
+
+  static async saveNotes(notes: Note[]): Promise<void> {
+    try {
+      await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+    } catch (error) {
+      console.error('Error saving notes:', error);
+    }
+  }
+
+  static async addNote(text: string, listName: string): Promise<void> {
+    try {
+      const notes = await this.getNotes();
+      const newNote: Note = {
+        id: Date.now().toString(),
+        text,
+        completed: false,
+        createdAt: new Date().toISOString(),
+        listName,
+      };
+      notes.push(newNote);
+      await this.saveNotes(notes);
+    } catch (error) {
+      console.error('Error adding note:', error);
+    }
+  }
+
+  static async updateNote(id: string, updates: Partial<Note>): Promise<void> {
+    try {
+      const notes = await this.getNotes();
+      const noteIndex = notes.findIndex(note => note.id === id);
+      if (noteIndex !== -1) {
+        notes[noteIndex] = { ...notes[noteIndex], ...updates };
+        await this.saveNotes(notes);
+      }
+    } catch (error) {
+      console.error('Error updating note:', error);
+    }
+  }
+
+  static async deleteNote(id: string): Promise<void> {
+    try {
+      const notes = await this.getNotes();
+      const filteredNotes = notes.filter(note => note.id !== id);
+      await this.saveNotes(filteredNotes);
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    }
+  }
+
+  static async getLists(): Promise<ListData[]> {
+    try {
+      const listsJson = await AsyncStorage.getItem(LISTS_KEY);
+      const lists = listsJson ? JSON.parse(listsJson) : [];
+      
+      // If no lists exist, create default ones
+      if (lists.length === 0) {
+        const defaultLists: ListData[] = [
+          { name: 'Personal', color: '#14B8A6' },
+          { name: 'Work', color: '#10B981' },
+          { name: 'Shopping', color: '#059669' },
+        ];
+        await this.saveLists(defaultLists);
+        return defaultLists;
+      }
+      
+      return lists;
+    } catch (error) {
+      console.error('Error loading lists:', error);
+      return [];
+    }
+  }
+
+  static async saveLists(lists: ListData[]): Promise<void> {
+    try {
+      await AsyncStorage.setItem(LISTS_KEY, JSON.stringify(lists));
+    } catch (error) {
+      console.error('Error saving lists:', error);
+    }
+  }
+
+  static async addList(name: string, color: string): Promise<void> {
+    try {
+      const lists = await this.getLists();
+      const newList: ListData = { name, color };
+      lists.push(newList);
+      await this.saveLists(lists);
+    } catch (error) {
+      console.error('Error adding list:', error);
+    }
+  }
+
+  static async updateList(oldName: string, newName: string, color: string): Promise<void> {
+    try {
+      const lists = await this.getLists();
+      const listIndex = lists.findIndex(list => list.name === oldName);
+      
+      if (listIndex !== -1) {
+        lists[listIndex] = { name: newName, color };
+        await this.saveLists(lists);
+        
+        // Update all notes that belong to this list
+        if (oldName !== newName) {
+          const notes = await this.getNotes();
+          const updatedNotes = notes.map(note => 
+            note.listName === oldName 
+              ? { ...note, listName: newName }
+              : note
+          );
+          await this.saveNotes(updatedNotes);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating list:', error);
+    }
+  }
+
+  static async deleteList(name: string): Promise<void> {
+    try {
+      const lists = await this.getLists();
+      const filteredLists = lists.filter(list => list.name !== name);
+      await this.saveLists(filteredLists);
+      
+      // Delete all notes in this list
+      const notes = await this.getNotes();
+      const filteredNotes = notes.filter(note => note.listName !== name);
+      await this.saveNotes(filteredNotes);
+    } catch (error) {
+      console.error('Error deleting list:', error);
+    }
+  }
+
+  static async getRecentNotes(limit: number = 5): Promise<Note[]> {
+    try {
+      const notes = await this.getNotes();
+      return notes
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, limit);
+    } catch (error) {
+      console.error('Error loading recent notes:', error);
+      return [];
+    }
+  }
+}
