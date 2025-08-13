@@ -3,6 +3,9 @@
     "name": "Listify",
     "slug": "listify",
     "version": "1.0.0",
+    "android": {
+      "package": "com.ghef.listify",
+      "versionCode": 1},
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
