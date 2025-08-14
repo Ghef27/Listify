@@ -10,6 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Clock } from 'lucide-react-native';
+import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { Poppins_400Regular, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import { StorageService } from '@/utils/storage';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
 import { AddNoteModal } from '@/components/AddNoteModal';
@@ -17,6 +19,25 @@ import { ReminderModal } from '@/components/ReminderModal';
 import { NoteItem } from '@/components/NoteItem';
 import { Note, ListData } from '@/types';
 
+// ============================================
+// CUSTOMIZABLE HEADER CONFIGURATION
+// ============================================
+// Change these values to customize the main screen header
+const MAIN_TITLE = 'Listify';           // Main app title - change this text
+const SUBTITLE = 'Your notes & lists';  // Subtitle text - change this text
+
+// Font configuration - uncomment the font family you want to use
+const TITLE_FONT = 'Poppins-Bold';      // Options: 'Poppins-Bold', 'Inter-Bold', or leave empty for default
+const SUBTITLE_FONT = 'Inter-Regular';  // Options: 'Inter-Regular', 'Poppins-Regular', or leave empty for default
+
+// Style configuration - easily modify colors, sizes, and spacing
+const TITLE_COLOR = '#1F2937';          // Title color (dark gray by default)
+const SUBTITLE_COLOR = '#6B7280';       // Subtitle color (medium gray by default)
+const TITLE_SIZE = 32;                  // Title font size
+const SUBTITLE_SIZE = 16;               // Subtitle font size
+const HEADER_BACKGROUND = '#fff';       // Header background color
+const TITLE_MARGIN_TOP = 4;             // Space between title and subtitle
+// ============================================
 export default function HomeScreen() {
   const router = useRouter();
   const [lists, setLists] = useState<ListData[]>([]);
@@ -26,6 +47,15 @@ export default function HomeScreen() {
   const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Load custom fonts
+  const [fontsLoaded] = useFonts({
+    'Inter-Regular': Inter_400Regular,
+    'Inter-SemiBold': Inter_600SemiBold,
+    'Inter-Bold': Inter_700Bold,
+    'Poppins-Regular': Poppins_400Regular,
+    'Poppins-SemiBold': Poppins_600SemiBold,
+    'Poppins-Bold': Poppins_700Bold,
+  });
   const loadData = useCallback(async () => {
     const [listsData, notes] = await Promise.all([
       StorageService.getLists(),
@@ -49,6 +79,10 @@ export default function HomeScreen() {
     loadData();
   }, [loadData]);
 
+  // Don't render until fonts are loaded
+  if (!fontsLoaded) {
+    return null;
+  }
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadData();
@@ -93,8 +127,27 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Listify</Text>
-        <Text style={styles.subtitle}>Your notes & lists</Text>
+        <Text style={[
+          styles.title,
+          { 
+            fontFamily: TITLE_FONT,
+            color: TITLE_COLOR,
+            fontSize: TITLE_SIZE
+          }
+        ]}>
+          {MAIN_TITLE}
+        </Text>
+        <Text style={[
+          styles.subtitle,
+          { 
+            fontFamily: SUBTITLE_FONT,
+            color: SUBTITLE_COLOR,
+            fontSize: SUBTITLE_SIZE,
+            marginTop: TITLE_MARGIN_TOP
+          }
+        ]}>
+          {SUBTITLE}
+        </Text>
       </View>
 
       <ScrollView 
@@ -187,19 +240,18 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingVertical: 20,
-    backgroundColor: '#fff',
+    backgroundColor: HEADER_BACKGROUND, // Use customizable background color
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
+  // Title styling - font family, color, and size are now configurable above
   title: {
-    fontSize: 32,
     fontWeight: 'bold',
-    color: '#1F2937',
+    // fontSize, color, and fontFamily are applied inline for easy customization
   },
+  // Subtitle styling - font family, color, and size are now configurable above
   subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginTop: 4,
+    // fontSize, color, fontFamily, and marginTop are applied inline for easy customization
   },
   content: {
     flex: 1,
