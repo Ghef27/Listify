@@ -47,6 +47,21 @@ export default function HomeScreen() {
   const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Load custom fonts
+  const [fontsLoaded] = useFonts({
+    'Inter-Regular': Inter_400Regular,
+    'Inter-SemiBold': Inter_600SemiBold,
+    'Inter-Bold': Inter_700Bold,
+    'Poppins-Regular': Poppins_400Regular,
+    'Poppins-SemiBold': Poppins_600SemiBold,
+    'Poppins-Bold': Poppins_700Bold,
+  });
+
+  // Don't render until fonts are loaded
+  if (!fontsLoaded) {
+    return null;
+  }
+
   const loadData = useCallback(async () => {
     const [listsData, notes] = await Promise.all([
       StorageService.getLists(),
@@ -66,24 +81,9 @@ export default function HomeScreen() {
     setRecentNotes(recent);
   }, []);
 
-  // Load custom fonts
-  const [fontsLoaded] = useFonts({
-    'Inter-Regular': Inter_400Regular,
-    'Inter-SemiBold': Inter_600SemiBold,
-    'Inter-Bold': Inter_700Bold,
-    'Poppins-Regular': Poppins_400Regular,
-    'Poppins-SemiBold': Poppins_600SemiBold,
-    'Poppins-Bold': Poppins_700Bold,
-  });
-
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  // Don't render until fonts are loaded
-  if (!fontsLoaded) {
-    return null;
-  }
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadData();
