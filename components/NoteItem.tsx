@@ -1,16 +1,17 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Check, GripVertical } from 'lucide-react-native';
+import { Check, Trash2 } from 'lucide-react-native';
 import { Note } from '@/types';
 
 interface NoteItemProps {
   note: Note;
   onToggleComplete: (noteId: string) => void;
+  onDelete?: (noteId: string) => void;
   onPress?: (note: Note) => void;
-  showReorderHandle?: boolean;
+  showDeleteButton?: boolean;
 }
 
-export function NoteItem({ note, onToggleComplete, onPress, showReorderHandle = false }: NoteItemProps) {
+export function NoteItem({ note, onToggleComplete, onDelete, onPress, showDeleteButton = false }: NoteItemProps) {
   return (
     <TouchableOpacity 
       style={styles.container} 
@@ -35,9 +36,13 @@ export function NoteItem({ note, onToggleComplete, onPress, showReorderHandle = 
         <Text style={styles.listName}>{note.listName}</Text>
       </View>
       
-      {showReorderHandle && (
-        <TouchableOpacity style={styles.reorderButton}>
-          <GripVertical size={20} color="#9CA3AF" />
+      {showDeleteButton && onDelete && (
+        <TouchableOpacity 
+          style={styles.deleteButton}
+          onPress={() => onDelete(note.id)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Trash2 size={18} color="#EF4444" />
         </TouchableOpacity>
       )}
     </TouchableOpacity>
@@ -90,7 +95,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 2,
   },
-  reorderButton: {
+  deleteButton: {
     padding: 8,
   },
 });

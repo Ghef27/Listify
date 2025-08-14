@@ -47,6 +47,11 @@ export default function SearchScreen() {
     }
   };
 
+  const handleDeleteNote = async (noteId: string) => {
+    await StorageService.deleteNote(noteId);
+    await loadNotes();
+  };
+
   const clearSearch = () => {
     setSearchQuery('');
   };
@@ -103,6 +108,8 @@ export default function SearchScreen() {
                 key={note.id}
                 note={note}
                 onToggleComplete={handleToggleComplete}
+                onDelete={handleDeleteNote}
+                showDeleteButton={true}
               />
             ))}
           </>

@@ -74,6 +74,11 @@ export default function ListScreen() {
     }
   };
 
+  const handleDeleteNote = async (noteId: string) => {
+    await StorageService.deleteNote(noteId);
+    await loadNotes();
+  };
+
   const handleAddNote = async (text: string, listName: string) => {
     await StorageService.addNote(text, listName);
     await loadNotes();
@@ -138,7 +143,8 @@ export default function ListScreen() {
               key={note.id}
               note={note}
               onToggleComplete={handleToggleComplete}
-              showReorderHandle={true}
+              onDelete={handleDeleteNote}
+              showDeleteButton={true}
             />
           ))
         )}

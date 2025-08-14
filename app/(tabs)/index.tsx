@@ -65,6 +65,11 @@ export default function HomeScreen() {
     }
   };
 
+  const handleDeleteNote = async (noteId: string) => {
+    await StorageService.deleteNote(noteId);
+    await loadNotes();
+  };
+
   const navigateToList = (listName: string) => {
     router.push(`/list/${encodeURIComponent(listName)}`);
   };
@@ -116,6 +121,8 @@ export default function HomeScreen() {
                 key={note.id}
                 note={note}
                 onToggleComplete={handleToggleComplete}
+                onDelete={handleDeleteNote}
+                showDeleteButton={true}
                 onPress={(note) => navigateToList(note.listName)}
               />
             ))}
