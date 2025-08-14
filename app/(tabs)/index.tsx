@@ -57,11 +57,6 @@ export default function HomeScreen() {
     'Poppins-Bold': Poppins_700Bold,
   });
 
-  // Don't render until fonts are loaded
-  if (!fontsLoaded) {
-    return null;
-  }
-
   const loadData = useCallback(async () => {
     const [listsData, notes] = await Promise.all([
       StorageService.getLists(),
@@ -84,6 +79,7 @@ export default function HomeScreen() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadData();
@@ -124,6 +120,11 @@ export default function HomeScreen() {
   const navigateToList = (listName: string) => {
     router.push(`/list/${encodeURIComponent(listName)}`);
   };
+
+  // Don't render until fonts are loaded
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
