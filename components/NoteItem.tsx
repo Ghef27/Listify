@@ -24,7 +24,7 @@ export function NoteItem({
 }: NoteItemProps) {
   return (
     <TouchableOpacity 
-      style={styles.container} 
+      style={[styles.container, note.completed && styles.containerCompleted]} 
       onPress={() => onPress?.(note)}
       activeOpacity={0.7}
     >
@@ -85,6 +85,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+  },
+  containerCompleted: {
+    backgroundColor: '#a5f2e9',
   },
   checkbox: {
     width: 24,
