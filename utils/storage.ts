@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Note, ListData } from '@/types';
+import { NotificationService } from './notifications';
 
 const NOTES_KEY = 'listify_notes';
 const LISTS_KEY = 'listify_lists';
@@ -46,6 +47,13 @@ export class StorageService {
       const notes = await this.getNotes();
       const noteIndex = notes.findIndex(note => note.id === id);
       if (noteIndex !== -1) {
+        const oldNote = notes[noteIndex];
+        
+        // Cancel old notification if reminder date is being changed
+        if (oldNote.notificationId && updates.reminderDate !== oldNote.reminderDate) {
+          await NotificationService.cancelNotification(oldNote.notificationId);
+        }
+        
         notes[noteIndex] = { 
           ...notes[noteIndex], 
           ...updates, 
@@ -61,6 +69,13 @@ export class StorageService {
   static async deleteNote(id: string): Promise<void> {
     try {
       const notes = await this.getNotes();
+      const noteToDelete = notes.find(note => note.id === id);
+      
+      // Cancel notification if it exists
+      if (noteToDelete?.notificationId) {
+        await NotificationService.cancelNotification(noteToDelete.notificationId);
+      }
+      
       const filteredNotes = notes.filter(note => note.id !== id);
       await this.saveNotes(filteredNotes);
     } catch (error) {
@@ -163,6 +178,35 @@ export class StorageService {
     } catch (error) {
       console.error('Error loading recent notes:', error);
       return [];
+    }
+  }
+
+  static async setNoteReminder(noteId: string, reminderDate: Date): Promise<void> {
+    try {
+      const notes = await this.getNotes();
+      const note = notes.find(n => n.id === noteId);
+      
+      if (note) {
+        // Cancel existing notification if any
+        if (note.notificationId) {
+          await NotificationService.cancelNotification(note.notificationId);
+        }
+        
+        // Schedule new notification
+        const notificationId = await NotificationService.scheduleNotification(
+          'Listify Reminder',
+          note.text,
+          reminderDate
+        );
+        
+        // Update note with reminder info
+        await this.updateNote(noteId, {
+          reminderDate,
+          notificationId: notificationId || undefined,
+        });
+      }
+    } catch (error) {
+      console.error('Error setting note reminder:', error);
     }
   }
 }

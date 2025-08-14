@@ -13,6 +13,7 @@ import { ChevronRight, Clock } from 'lucide-react-native';
 import { StorageService } from '@/utils/storage';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
 import { AddNoteModal } from '@/components/AddNoteModal';
+import { ReminderModal } from '@/components/ReminderModal';
 import { NoteItem } from '@/components/NoteItem';
 import { Note, ListData } from '@/types';
 
@@ -21,6 +22,8 @@ export default function HomeScreen() {
   const [lists, setLists] = useState<ListData[]>([]);
   const [recentNotes, setRecentNotes] = useState<Note[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -67,7 +70,20 @@ export default function HomeScreen() {
 
   const handleDeleteNote = async (noteId: string) => {
     await StorageService.deleteNote(noteId);
-    await loadNotes();
+    await loadData();
+  };
+
+  const handleSetReminder = (note: Note) => {
+    setSelectedNoteForReminder(note);
+    setShowReminderModal(true);
+  };
+
+  const handleSaveReminder = async (reminderDate: Date) => {
+    if (selectedNoteForReminder) {
+      await StorageService.setNoteReminder(selectedNoteForReminder.id, reminderDate);
+      await loadData();
+      setSelectedNoteForReminder(null);
+    }
   };
 
   const navigateToList = (listName: string) => {
@@ -122,7 +138,9 @@ export default function HomeScreen() {
                 note={note}
                 onToggleComplete={handleToggleComplete}
                 onDelete={handleDeleteNote}
+                onSetReminder={handleSetReminder}
                 showDeleteButton={true}
+                showReminderButton={true}
                 onPress={(note) => navigateToList(note.listName)}
               />
             ))}
@@ -146,6 +164,16 @@ export default function HomeScreen() {
         onClose={() => setShowAddModal(false)}
         onSave={handleAddNote}
         lists={lists}
+      />
+
+      <ReminderModal
+        visible={showReminderModal}
+        onClose={() => {
+          setShowReminderModal(false);
+          setSelectedNoteForReminder(null);
+        }}
+        onSave={handleSaveReminder}
+        noteText={selectedNoteForReminder?.text || ''}
       />
     </SafeAreaView>
   );

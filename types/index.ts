@@ -5,6 +5,8 @@ export interface Note {
   completed: boolean;
   createdAt: Date;
   updatedAt: Date;
+  reminderDate?: Date;
+  notificationId?: string;
 }
 
 export interface ListData {

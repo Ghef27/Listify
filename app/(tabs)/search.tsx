@@ -11,12 +11,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, X } from 'lucide-react-native';
 import { StorageService } from '@/utils/storage';
 import { NoteItem } from '@/components/NoteItem';
+import { ReminderModal } from '@/components/ReminderModal';
 import { Note } from '@/types';
 
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [allNotes, setAllNotes] = useState<Note[]>([]);
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
 
   const loadNotes = useCallback(async () => {
     const notes = await StorageService.getNotes();
@@ -50,6 +53,19 @@ export default function SearchScreen() {
   const handleDeleteNote = async (noteId: string) => {
     await StorageService.deleteNote(noteId);
     await loadNotes();
+  };
+
+  const handleSetReminder = (note: Note) => {
+    setSelectedNoteForReminder(note);
+    setShowReminderModal(true);
+  };
+
+  const handleSaveReminder = async (reminderDate: Date) => {
+    if (selectedNoteForReminder) {
+      await StorageService.setNoteReminder(selectedNoteForReminder.id, reminderDate);
+      await loadNotes();
+      setSelectedNoteForReminder(null);
+    }
   };
 
   const clearSearch = () => {
@@ -109,12 +125,24 @@ export default function SearchScreen() {
                 note={note}
                 onToggleComplete={handleToggleComplete}
                 onDelete={handleDeleteNote}
+                onSetReminder={handleSetReminder}
                 showDeleteButton={true}
+                showReminderButton={true}
               />
             ))}
           </>
         )}
       </ScrollView>
+
+      <ReminderModal
+        visible={showReminderModal}
+        onClose={() => {
+          setShowReminderModal(false);
+          setSelectedNoteForReminder(null);
+        }}
+        onSave={handleSaveReminder}
+        noteText={selectedNoteForReminder?.text || ''}
+      />
     </SafeAreaView>
   );
 }

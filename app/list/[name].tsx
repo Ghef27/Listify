@@ -17,6 +17,7 @@ import { StorageService } from '@/utils/storage';
 import { NoteItem } from '@/components/NoteItem';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
 import { AddNoteModal } from '@/components/AddNoteModal';
+import { ReminderModal } from '@/components/ReminderModal';
 import { Note, ListData } from '@/types';
 
 export default function ListScreen() {
@@ -26,6 +27,8 @@ export default function ListScreen() {
   const [lists, setLists] = useState<ListData[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
   const [editListName, setEditListName] = useState('');
   const [editListColor, setEditListColor] = useState('#2563EB');
   const [refreshing, setRefreshing] = useState(false);
@@ -82,7 +85,19 @@ export default function ListScreen() {
   const handleAddNote = async (text: string, listName: string) => {
     await StorageService.addNote(text, listName);
     await loadNotes();
-    await loadNotes();
+  };
+
+  const handleSetReminder = (note: Note) => {
+    setSelectedNoteForReminder(note);
+    setShowReminderModal(true);
+  };
+
+  const handleSaveReminder = async (reminderDate: Date) => {
+    if (selectedNoteForReminder) {
+      await StorageService.setNoteReminder(selectedNoteForReminder.id, reminderDate);
+      await loadNotes();
+      setSelectedNoteForReminder(null);
+    }
   };
 
   const handleEditList = () => {
@@ -144,7 +159,9 @@ export default function ListScreen() {
               note={note}
               onToggleComplete={handleToggleComplete}
               onDelete={handleDeleteNote}
+              onSetReminder={handleSetReminder}
               showDeleteButton={true}
+              showReminderButton={true}
             />
           ))
         )}
@@ -158,6 +175,16 @@ export default function ListScreen() {
         onSave={handleAddNote}
         initialList={name}
         lists={lists}
+      />
+
+      <ReminderModal
+        visible={showReminderModal}
+        onClose={() => {
+          setShowReminderModal(false);
+          setSelectedNoteForReminder(null);
+        }}
+        onSave={handleSaveReminder}
+        noteText={selectedNoteForReminder?.text || ''}
       />
 
       <Modal visible={showEditModal} animationType="slide" presentationStyle="pageSheet">
