@@ -61,13 +61,40 @@ export default function RemindersScreen() {
     setShowReminderModal(true);
   };
 
-  const handleSaveReminder = async (reminderDate: Date) => {
-    if (selectedNoteForReminder) {
-      await StorageService.setNoteReminder(selectedNoteForReminder.id, reminderDate);
-      await loadNotesWithReminders();
-      setSelectedNoteForReminder(null);
-    }
-  };
+const handleSaveReminder = async (reminderDate: Date) => {
+  if (!selectedNoteForReminder) return;
+
+  try {
+    // Split the picked Date into separate date and time
+    const selectedDate = new Date(
+      reminderDate.getFullYear(),
+      reminderDate.getMonth(),
+      reminderDate.getDate()
+    );
+    const selectedTime = new Date(
+      0, 0, 0,
+      reminderDate.getHours(),
+      reminderDate.getMinutes(),
+      0,
+      0
+    );
+
+    // Schedule the reminder
+    await StorageService.setNoteReminder(
+      selectedNoteForReminder.id,
+      selectedDate,
+      selectedTime
+    );
+
+    // Refresh notes and reset selection
+    await loadNotesWithReminders();
+    setSelectedNoteForReminder(null);
+
+  } catch (error) {
+    console.error('Error saving reminder:', error);
+  }
+};
+
 
   const formatReminderTime = (reminderDate: Date) => {
     const now = new Date();

@@ -11,6 +11,7 @@ Notifications.setNotificationHandler({
 });
 
 export class NotificationService {
+  // Request permission for notifications
   static async requestPermissions(): Promise<boolean> {
     if (Platform.OS === 'web') {
       return false; // Notifications not supported on web
@@ -27,6 +28,7 @@ export class NotificationService {
     return finalStatus === 'granted';
   }
 
+  // Schedule a notification for a specific future date
   static async scheduleNotification(
     title: string,
     body: string,
@@ -38,15 +40,21 @@ export class NotificationService {
         throw new Error('Notification permissions not granted');
       }
 
+      // Prevent scheduling in the past
+      const now = new Date();
+      if (date <= now) {
+        console.warn('Scheduled date is in the past. Notification not set.');
+        return null;
+      }
+
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
-          title: 'Listify Reminder',
+          title: title || 'Listify Reminder',
           body: body,
           sound: 'default',
+          priority: Notifications.AndroidNotificationPriority.HIGH,
         },
-        trigger: {
-          date: date,
-        },
+        trigger: { date }, // exact date → triggers at the correct time
       });
 
       return notificationId;
@@ -56,6 +64,7 @@ export class NotificationService {
     }
   }
 
+  // Cancel a single notification by ID
   static async cancelNotification(notificationId: string): Promise<void> {
     try {
       await Notifications.cancelScheduledNotificationAsync(notificationId);
@@ -64,6 +73,7 @@ export class NotificationService {
     }
   }
 
+  // Cancel all scheduled notifications
   static async cancelAllNotifications(): Promise<void> {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();

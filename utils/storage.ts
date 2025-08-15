@@ -181,32 +181,55 @@ export class StorageService {
     }
   }
 
-  static async setNoteReminder(noteId: string, reminderDate: Date): Promise<void> {
-    try {
-      const notes = await this.getNotes();
-      const note = notes.find(n => n.id === noteId);
-      
-      if (note) {
-        // Cancel existing notification if any
-        if (note.notificationId) {
-          await NotificationService.cancelNotification(note.notificationId);
-        }
-        
-        // Schedule new notification
-        const notificationId = await NotificationService.scheduleNotification(
-          'Listify Reminder',
-          note.text,
-          reminderDate
-        );
-        
-        // Update note with reminder info
-        await this.updateNote(noteId, {
-          reminderDate,
-          notificationId: notificationId || undefined,
-        });
-      }
-    } catch (error) {
-      console.error('Error setting note reminder:', error);
+  static async setNoteReminder(
+  noteId: string,
+  selectedDate: Date,  // date picker value
+  selectedTime: Date   // time picker value
+): Promise<void> {
+  try {
+    const notes = await this.getNotes();
+    const note = notes.find(n => n.id === noteId);
+
+    if (!note) return;
+
+    // Cancel existing notification if any
+    if (note.notificationId) {
+      await NotificationService.cancelNotification(note.notificationId);
     }
+
+    // Combine date and time into a single future Date object
+    const fireAt = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      selectedTime.getHours(),
+      selectedTime.getMinutes(),
+      0,
+      0
+    );
+
+    const now = new Date();
+    if (fireAt <= now) {
+      console.warn('Selected reminder time is in the past. Notification not set.');
+      return; // stop if time is already past
+    }
+
+    // Schedule new notification
+    const notificationId = await NotificationService.scheduleNotification(
+      'Listify Reminder',
+      note.text,
+      fireAt
+    );
+
+    // Update note with reminder info
+    await this.updateNote(noteId, {
+      reminderDate: fireAt,
+      notificationId: notificationId || undefined,
+    });
+
+  } catch (error) {
+    console.error('Error setting note reminder:', error);
   }
+}
+
 }

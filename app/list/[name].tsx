@@ -50,7 +50,6 @@ export default function ListScreen() {
     
     const listNotes = allNotes.filter(note => note.listName === name);
     
-    // Sort notes: incomplete first, then completed at bottom
     const sortedNotes = [
       ...listNotes.filter(note => !note.completed),
       ...listNotes.filter(note => note.completed),
@@ -92,11 +91,38 @@ export default function ListScreen() {
     setShowReminderModal(true);
   };
 
+  // ✅ Updated handleSaveReminder
   const handleSaveReminder = async (reminderDate: Date) => {
-    if (selectedNoteForReminder) {
-      await StorageService.setNoteReminder(selectedNoteForReminder.id, reminderDate);
+    if (!selectedNoteForReminder) return;
+
+    try {
+      // Split the picked Date into separate date and time
+      const selectedDate = new Date(
+        reminderDate.getFullYear(),
+        reminderDate.getMonth(),
+        reminderDate.getDate()
+      );
+      const selectedTime = new Date(
+        0, 0, 0,
+        reminderDate.getHours(),
+        reminderDate.getMinutes(),
+        0,
+        0
+      );
+
+      // Schedule the reminder
+      await StorageService.setNoteReminder(
+        selectedNoteForReminder.id,
+        selectedDate,
+        selectedTime
+      );
+
+      // Refresh notes and reset selection
       await loadNotes();
       setSelectedNoteForReminder(null);
+
+    } catch (error) {
+      console.error('Error saving reminder:', error);
     }
   };
 
@@ -113,7 +139,6 @@ export default function ListScreen() {
       await StorageService.updateList(name, editListName.trim(), editListColor);
       setShowEditModal(false);
       
-      // If name changed, navigate back to avoid confusion
       if (editListName.trim() !== name) {
         Alert.alert('List Updated', 'List name has been changed.', [
           { text: 'OK', onPress: () => router.back() }
@@ -231,118 +256,24 @@ export default function ListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  backButton: {
-    padding: 8,
-    marginLeft: -8,
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    marginHorizontal: 16,
-  },
-  colorIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  settingsButton: {
-    padding: 8,
-  },
-  content: {
-    flex: 1,
-    paddingTop: 8,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 64,
-    paddingHorizontal: 32,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  modalContent: {
-    flex: 1,
-    padding: 16,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 8,
-    marginTop: 16,
-  },
-  textInput: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  colorGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  colorOption: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 3,
-    borderColor: 'transparent',
-  },
-  colorOptionSelected: {
-    borderColor: '#1F2937',
-  },
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  backButton: { padding: 8, marginLeft: -8 },
+  titleContainer: { flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center', marginHorizontal: 16 },
+  colorIndicator: { width: 12, height: 12, borderRadius: 6, marginRight: 8 },
+  title: { fontSize: 20, fontWeight: '600', color: '#1F2937' },
+  settingsButton: { padding: 8 },
+  content: { flex: 1, paddingTop: 8 },
+  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 64, paddingHorizontal: 32 },
+  emptyTitle: { fontSize: 20, fontWeight: '600', color: '#1F2937', marginBottom: 8 },
+  emptyText: { fontSize: 16, color: '#6B7280', textAlign: 'center', lineHeight: 22 },
+  modalContainer: { flex: 1, backgroundColor: '#F9FAFB' },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: '#1F2937' },
+  modalContent: { flex: 1, padding: 16 },
+  inputLabel: { fontSize: 16, fontWeight: '600', color: '#1F2937', marginBottom: 8, marginTop: 16 },
+  textInput: { backgroundColor: '#fff', borderRadius: 8, padding: 12, fontSize: 16, borderWidth: 1, borderColor: '#E5E7EB' },
+  colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  colorOption: { width: 40, height: 40, borderRadius: 20, borderWidth: 3, borderColor: 'transparent' },
+  colorOptionSelected: { borderColor: '#1F2937' },
 });
