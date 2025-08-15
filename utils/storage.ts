@@ -78,7 +78,7 @@ export class StorageService {
       const notes = await this.getNotes();
       const noteToDelete = notes.find(note => note.id === id);
       if (noteToDelete?.notificationId) {
-        await notificationManager.cancelNotification(noteToDelete.notificationId);
+        notificationManager.cancelNotification(noteToDelete.notificationId);
       }
       const filteredNotes = notes.filter(note => note.id !== id);
       await this.saveNotes(filteredNotes);
@@ -107,7 +107,7 @@ export class StorageService {
 
       if (note.notificationId) {
         console.log(`[7] Cancelling existing notification: ${note.notificationId}`);
-        await notificationManager.cancelNotification(note.notificationId);
+        notificationManager.cancelNotification(note.notificationId);
       }
 
       const fireAt = new Date(reminderDateTime);
@@ -120,7 +120,7 @@ export class StorageService {
       }
 
       console.log('[9] Calling NotificationService.scheduleNotification...');
-      const notificationId = await notificationManager.scheduleNotification(
+      const notificationId = notificationManager.scheduleNotification(
         'Listify Reminder',
         note.text,
         fireAt
