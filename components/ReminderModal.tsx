@@ -19,23 +19,41 @@ interface ReminderModalProps {
 }
 
 export function ReminderModal({ visible, onClose, onSave, noteText }: ReminderModalProps) {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedTime, setSelectedTime] = useState(new Date());
+  // Initialize with tomorrow at current time to avoid past dates
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  const [selectedDate, setSelectedDate] = useState(tomorrow);
+  const [selectedTime, setSelectedTime] = useState(() => {
+    const time = new Date();
+    time.setHours(time.getHours() + 1); // Default to 1 hour from now
+    return time;
+  });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   const handleSave = () => {
-    // Combine date and time
-    const reminderDateTime = new Date(selectedDate);
-    reminderDateTime.setHours(selectedTime.getHours());
-    reminderDateTime.setMinutes(selectedTime.getMinutes());
+    // Properly combine date and time
+    const reminderDateTime = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      selectedTime.getHours(),
+      selectedTime.getMinutes(),
+      0, // seconds
+      0  // milliseconds
+    );
+    
+    // Debug logging
+    console.log('Selected Date:', selectedDate);
+    console.log('Selected Time:', selectedTime);
+    console.log('Combined DateTime:', reminderDateTime);
+    console.log('Current Time:', new Date());
+    console.log('Is future?', reminderDateTime > new Date());
     
     onSave(reminderDateTime);
     
-    // Auto-close after 1 second
-    setTimeout(() => {
-      onClose();
-    }, 1000);
+    onClose();
   };
 
   const formatDate = (date: Date) => {

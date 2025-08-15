@@ -113,25 +113,10 @@ const handleSaveReminder = async (reminderDate: Date) => {
   if (!selectedNoteForReminder) return;
 
   try {
-    // Split the picked Date into separate date and time
-    const selectedDate = new Date(
-      reminderDate.getFullYear(),
-      reminderDate.getMonth(),
-      reminderDate.getDate()
-    );
-    const selectedTime = new Date(
-      0, 0, 0, 
-      reminderDate.getHours(), 
-      reminderDate.getMinutes(), 
-      0, 
-      0
-    );
-
-    // Schedule the reminder
+    // Pass the combined date/time directly
     await StorageService.setNoteReminder(
       selectedNoteForReminder.id,
-      selectedDate,
-      selectedTime
+      reminderDate
     );
 
     // Refresh data and reset selection

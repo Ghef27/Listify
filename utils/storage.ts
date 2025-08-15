@@ -183,8 +183,7 @@ export class StorageService {
 
   static async setNoteReminder(
   noteId: string,
-  selectedDate: Date,  // date picker value
-  selectedTime: Date   // time picker value
+  reminderDateTime: Date  // combined date and time
 ): Promise<void> {
   try {
     const notes = await this.getNotes();
@@ -197,20 +196,17 @@ export class StorageService {
       await NotificationService.cancelNotification(note.notificationId);
     }
 
-    // Combine date and time into a single future Date object
-    const fireAt = new Date(
-      selectedDate.getFullYear(),
-      selectedDate.getMonth(),
-      selectedDate.getDate(),
-      selectedTime.getHours(),
-      selectedTime.getMinutes(),
-      0,
-      0
-    );
+    // Use the already combined date/time
+    const fireAt = new Date(reminderDateTime);
+    
+    // Debug logging
+    console.log('Setting reminder for:', fireAt);
+    console.log('Current time:', new Date());
+    console.log('Time difference (ms):', fireAt.getTime() - new Date().getTime());
 
     const now = new Date();
     if (fireAt <= now) {
-      console.warn('Selected reminder time is in the past. Notification not set.');
+      console.warn('Selected reminder time is in the past:', fireAt, 'Current:', now);
       return; // stop if time is already past
     }
 
@@ -220,6 +216,8 @@ export class StorageService {
       note.text,
       fireAt
     );
+    
+    console.log('Scheduled notification with ID:', notificationId);
 
     // Update note with reminder info
     await this.updateNote(noteId, {
