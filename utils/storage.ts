@@ -199,15 +199,6 @@ static async getNotes(): Promise<Note[]> {
   noteId: string,
   reminderDateTime: Date  // combined date and time
 ): Promise<void> {
-  // --- THIS IS THE DEBUG ALERT WE ADDED ---
-  Alert.alert(
-    "DEBUG INFO",
-    `1. Value received: ${String(reminderDateTime)}\n` +
-    `2. Type of value: ${typeof reminderDateTime}\n` +
-    `3. After 'new Date()': ${String(new Date(reminderDateTime))}`
-  );
-  // --- END OF DEBUG ALERT ---
-
   try {
     const notes = await this.getNotes();
     const note = notes.find(n => n.id === noteId);
@@ -222,7 +213,7 @@ static async getNotes(): Promise<Note[]> {
     // Use the already combined date/time
     const fireAt = new Date(reminderDateTime);
     
-    // Debug logging
+    // Debug logging (these console.logs are fine to leave, they don't affect the user)
     console.log('Setting reminder for:', fireAt);
     console.log('Current time:', new Date());
     console.log('Time difference (ms):', fireAt.getTime() - new Date().getTime());
