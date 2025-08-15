@@ -36,4 +36,11 @@ rootProject.name = 'Listify'
 expoAutolinking.useExpoVersionCatalog()
 
 include ':app'
+
+// --- THIS IS THE FINAL FIX ---
+// Manually include the react-native-push-notification project
+include ':@react-native-push-notification'
+project(':@react-native-push-notification').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-push-notification/android')
+// --- END OF FIX ---
+
 includeBuild(expoAutolinking.reactNativeGradlePlugin)
