@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Alert, // Import Alert for the safety check
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
@@ -19,41 +20,40 @@ interface ReminderModalProps {
 }
 
 export function ReminderModal({ visible, onClose, onSave, noteText }: ReminderModalProps) {
-  // Initialize with tomorrow at current time to avoid past dates
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  
-  const [selectedDate, setSelectedDate] = useState(tomorrow);
-  const [selectedTime, setSelectedTime] = useState(() => {
-    const time = new Date();
-    time.setHours(time.getHours() + 1); // Default to 1 hour from now
-    return time;
+  // --- START OF FIX ---
+  // Use a single state for the combined date and time.
+  // Initialize to one hour in the future to ensure it's always valid.
+  const [reminderDateTime, setReminderDateTime] = useState(() => {
+    const futureDate = new Date();
+    futureDate.setHours(futureDate.getHours() + 1);
+    return futureDate;
   });
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  
+  // State to manage which picker (date or time) is shown
+  const [showPicker, setShowPicker] = useState<'date' | 'time' | null>(null);
 
+  // A single handler for both date and time pickers
+  const onDateTimeChange = (event: any, selectedDate?: Date) => {
+    // Hide the picker on Android after selection
+    if (Platform.OS === 'android') {
+      setShowPicker(null);
+    }
+    // If a date is selected, update our single state
+    if (selectedDate) {
+      setReminderDateTime(selectedDate);
+    }
+  };
+
+  // The save handler now uses the clean, unified state
   const handleSave = () => {
-    // Properly combine date and time
-    const reminderDateTime = new Date(
-      selectedDate.getFullYear(),
-      selectedDate.getMonth(),
-      selectedDate.getDate(),
-      selectedTime.getHours(),
-      selectedTime.getMinutes(),
-      0, // seconds
-      0  // milliseconds
-    );
-    
-    // Debug logging
-    console.log('Selected Date:', selectedDate);
-    console.log('Selected Time:', selectedTime);
-    console.log('Combined DateTime:', reminderDateTime);
-    console.log('Current Time:', new Date());
-    console.log('Is future?', reminderDateTime > new Date());
-    
-    onSave(reminderDateTime);
-    
-    onClose();
+    // No more combining needed! The state is always correct.
+    if (reminderDateTime > new Date()) {
+      onSave(reminderDateTime);
+      onClose();
+    } else {
+      // This alert is a safety net in case the user manages to select a past time.
+      Alert.alert('Invalid Time', 'Please select a future date and time for the reminder.');
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -71,6 +71,7 @@ export function ReminderModal({ visible, onClose, onSave, noteText }: ReminderMo
       minute: '2-digit',
     });
   };
+  // --- END OF FIX ---
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
@@ -94,54 +95,38 @@ export function ReminderModal({ visible, onClose, onSave, noteText }: ReminderMo
           <View style={styles.dateTimeSection}>
             <Text style={styles.sectionTitle}>Select Date & Time</Text>
             
+            {/* Updated to use the new state and picker logic */}
             <TouchableOpacity 
               style={styles.dateTimeButton}
-              onPress={() => setShowDatePicker(true)}
+              onPress={() => setShowPicker('date')}
             >
               <Text style={styles.dateTimeLabel}>Date</Text>
-              <Text style={styles.dateTimeValue}>{formatDate(selectedDate)}</Text>
+              <Text style={styles.dateTimeValue}>{formatDate(reminderDateTime)}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={styles.dateTimeButton}
-              onPress={() => setShowTimePicker(true)}
+              onPress={() => setShowPicker('time')}
             >
               <Text style={styles.dateTimeLabel}>Time</Text>
-              <Text style={styles.dateTimeValue}>{formatTime(selectedTime)}</Text>
+              <Text style={styles.dateTimeValue}>{formatTime(reminderDateTime)}</Text>
             </TouchableOpacity>
           </View>
 
+          {/* Updated to call the new save handler */}
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <Text style={styles.saveButtonText}>Activate Reminder</Text>
           </TouchableOpacity>
         </View>
 
-        {showDatePicker && (
+        {/* A single, smarter DateTimePicker block */}
+        {showPicker && (
           <DateTimePicker
-            value={selectedDate}
-            mode="date"
+            value={reminderDateTime}
+            mode={showPicker}
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={(event, date) => {
-              setShowDatePicker(Platform.OS === 'ios');
-              if (date) {
-                setSelectedDate(date);
-              }
-            }}
+            onChange={onDateTimeChange}
             minimumDate={new Date()}
-          />
-        )}
-
-        {showTimePicker && (
-          <DateTimePicker
-            value={selectedTime}
-            mode="time"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={(event, time) => {
-              setShowTimePicker(Platform.OS === 'ios');
-              if (time) {
-                setSelectedTime(time);
-              }
-            }}
           />
         )}
       </SafeAreaView>
