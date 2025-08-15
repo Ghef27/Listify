@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
-  Alert, // Import Alert for the safety check
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
@@ -20,58 +20,50 @@ interface ReminderModalProps {
 }
 
 export function ReminderModal({ visible, onClose, onSave, noteText }: ReminderModalProps) {
-  // --- START OF FIX ---
-  // Use a single state for the combined date and time.
-  // Initialize to one hour in the future to ensure it's always valid.
   const [reminderDateTime, setReminderDateTime] = useState(() => {
     const futureDate = new Date();
     futureDate.setHours(futureDate.getHours() + 1);
     return futureDate;
   });
   
-  // State to manage which picker (date or time) is shown
   const [showPicker, setShowPicker] = useState<'date' | 'time' | null>(null);
 
-  // A single handler for both date and time pickers
   const onDateTimeChange = (event: any, selectedDate?: Date) => {
-    // Hide the picker on Android after selection
     if (Platform.OS === 'android') {
       setShowPicker(null);
     }
-    // If a date is selected, update our single state
     if (selectedDate) {
       setReminderDateTime(selectedDate);
     }
   };
 
-  // The save handler now uses the clean, unified state
   const handleSave = () => {
-    // No more combining needed! The state is always correct.
+    // --- DIAGNOSTIC LOGGING ---
+    console.log('--- ReminderModal: handleSave triggered ---');
+    console.log(`[1] Current reminderDateTime state: ${reminderDateTime.toISOString()}`);
+
     if (reminderDateTime > new Date()) {
+      console.log('[2] Date is in the future. Calling onSave...');
       onSave(reminderDateTime);
       onClose();
     } else {
-      // This alert is a safety net in case the user manages to select a past time.
+      console.log('[2] Date is in the past. Showing alert.');
       Alert.alert('Invalid Time', 'Please select a future date and time for the reminder.');
     }
+    console.log('--- ReminderModal: handleSave finished ---');
   };
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+      weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
     });
   };
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
+      hour: '2-digit', minute: '2-digit',
     });
   };
-  // --- END OF FIX ---
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
@@ -83,7 +75,6 @@ export function ReminderModal({ visible, onClose, onSave, noteText }: ReminderMo
             <X size={24} color="#1F2937" />
           </TouchableOpacity>
         </View>
-
         <View style={styles.content}>
           <View style={styles.notePreview}>
             <Text style={styles.notePreviewLabel}>Note:</Text>
@@ -91,11 +82,8 @@ export function ReminderModal({ visible, onClose, onSave, noteText }: ReminderMo
               {noteText}
             </Text>
           </View>
-
           <View style={styles.dateTimeSection}>
             <Text style={styles.sectionTitle}>Select Date & Time</Text>
-            
-            {/* Updated to use the new state and picker logic */}
             <TouchableOpacity 
               style={styles.dateTimeButton}
               onPress={() => setShowPicker('date')}
@@ -103,7 +91,6 @@ export function ReminderModal({ visible, onClose, onSave, noteText }: ReminderMo
               <Text style={styles.dateTimeLabel}>Date</Text>
               <Text style={styles.dateTimeValue}>{formatDate(reminderDateTime)}</Text>
             </TouchableOpacity>
-
             <TouchableOpacity 
               style={styles.dateTimeButton}
               onPress={() => setShowPicker('time')}
@@ -112,14 +99,10 @@ export function ReminderModal({ visible, onClose, onSave, noteText }: ReminderMo
               <Text style={styles.dateTimeValue}>{formatTime(reminderDateTime)}</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Updated to call the new save handler */}
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <Text style={styles.saveButtonText}>Activate Reminder</Text>
           </TouchableOpacity>
         </View>
-
-        {/* A single, smarter DateTimePicker block */}
         {showPicker && (
           <DateTimePicker
             value={reminderDateTime}
