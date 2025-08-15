@@ -251,4 +251,4 @@ static async getNotes(): Promise<Note[]> {
   } catch (error) {
     console.error('Error setting note reminder:', error);
   }
-}
+}}
