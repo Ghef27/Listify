@@ -47,14 +47,17 @@ export class NotificationService {
         return null;
       }
 
-      const notificationId = await Notifications.scheduleNotificationAsync({
+const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: title || 'Listify Reminder',
           body: body,
           sound: 'default',
           priority: Notifications.AndroidNotificationPriority.HIGH,
         },
-        trigger: { date }, // exact date → triggers at the correct time
+        trigger: {
+          date: date,
+          channelId: 'default', // Explicitly setting the default channel for Android
+        },
       });
 
       return notificationId;
