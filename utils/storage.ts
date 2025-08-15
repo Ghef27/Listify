@@ -6,10 +6,23 @@ const NOTES_KEY = 'listify_notes';
 const LISTS_KEY = 'listify_lists';
 
 export class StorageService {
-  static async getNotes(): Promise<Note[]> {
+static async getNotes(): Promise<Note[]> {
     try {
       const notesJson = await AsyncStorage.getItem(NOTES_KEY);
-      return notesJson ? JSON.parse(notesJson) : [];
+      if (!notesJson) {
+        return [];
+      }
+      
+      const notesFromStorage = JSON.parse(notesJson);
+      
+      // THIS IS THE FIX: Convert date strings back to Date objects
+      return notesFromStorage.map((note: Note) => ({
+        ...note,
+        createdAt: note.createdAt ? new Date(note.createdAt) : undefined,
+        updatedAt: note.updatedAt ? new Date(note.updatedAt) : undefined,
+        reminderDate: note.reminderDate ? new Date(note.reminderDate) : undefined,
+      }));
+      
     } catch (error) {
       console.error('Error loading notes:', error);
       return [];
