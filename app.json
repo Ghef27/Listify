@@ -4,7 +4,7 @@
     "slug": "listify",
     "version": "1.0.0",
     "android": {
-      "package": "com.ghef.listify",
+      "package": "com.ghef.listify.dev", 
       "versionCode": 1
     },
     "orientation": "portrait",
