@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Note, ListData } from '@/types';
 import { NotificationService } from './notifications';
+import { Alert } from 'react-native';
 
 const NOTES_KEY = 'listify_notes';
 const LISTS_KEY = 'listify_lists';
@@ -198,6 +199,15 @@ static async getNotes(): Promise<Note[]> {
   noteId: string,
   reminderDateTime: Date  // combined date and time
 ): Promise<void> {
+  // --- THIS IS THE DEBUG ALERT WE ADDED ---
+  Alert.alert(
+    "DEBUG INFO",
+    `1. Value received: ${String(reminderDateTime)}\n` +
+    `2. Type of value: ${typeof reminderDateTime}\n` +
+    `3. After 'new Date()': ${String(new Date(reminderDateTime))}`
+  );
+  // --- END OF DEBUG ALERT ---
+
   try {
     const notes = await this.getNotes();
     const note = notes.find(n => n.id === noteId);
@@ -241,6 +251,4 @@ static async getNotes(): Promise<Note[]> {
   } catch (error) {
     console.error('Error setting note reminder:', error);
   }
-}
-
 }
