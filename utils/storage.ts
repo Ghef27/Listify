@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Note, ListData } from '@/types';
-import { NotificationService } from './notifications';
+import { notificationManager } from './notifications';
 import { Alert } from 'react-native';
 
 const NOTES_KEY = 'listify_notes';
@@ -59,7 +59,7 @@ export class StorageService {
       if (noteIndex !== -1) {
         const oldNote = notes[noteIndex];
         if (oldNote.notificationId && updates.reminderDate !== oldNote.reminderDate) {
-          await NotificationService.cancelNotification(oldNote.notificationId);
+          notificationManager.cancelNotification(oldNote.notificationId);
         }
         notes[noteIndex] = { 
           ...notes[noteIndex], 
@@ -78,7 +78,7 @@ export class StorageService {
       const notes = await this.getNotes();
       const noteToDelete = notes.find(note => note.id === id);
       if (noteToDelete?.notificationId) {
-        await NotificationService.cancelNotification(noteToDelete.notificationId);
+        notificationManager.cancelNotification(noteToDelete.notificationId);
       }
       const filteredNotes = notes.filter(note => note.id !== id);
       await this.saveNotes(filteredNotes);
@@ -107,7 +107,7 @@ export class StorageService {
 
       if (note.notificationId) {
         console.log(`[7] Cancelling existing notification: ${note.notificationId}`);
-        await NotificationService.cancelNotification(note.notificationId);
+        notificationManager.cancelNotification(note.notificationId);
       }
 
       const fireAt = new Date(reminderDateTime);
@@ -119,8 +119,8 @@ export class StorageService {
         return;
       }
 
-      console.log('[9] Calling NotificationService.scheduleNotification...');
-      const notificationId = await NotificationService.scheduleNotification(
+      console.log('[9] Calling notificationManager.scheduleNotification...');
+      const notificationId = notificationManager.scheduleNotification(
         'Listify Reminder',
         note.text,
         fireAt
