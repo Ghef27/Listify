@@ -1,7 +1,13 @@
 {
   "expo": {
-      "expo-web-browser"
-    },
+    "name": "listify",
+    "slug": "listify",
+    "version": "1.0.0",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
