@@ -1,117 +1,107 @@
-import PushNotification from 'react-native-push-notification';
+import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-// Conditionally import BackgroundTimer only for native platforms
-let BackgroundTimer: any = null;
-if (Platform.OS !== 'web') {
-  try {
-    BackgroundTimer = require('react-native-background-timer');
-  } catch (error) {
-    console.warn('BackgroundTimer not available:', error);
-  }
-}
+// Configure notification behavior
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 class NotificationService {
-  private activeTimers: Map<string, number> = new Map();
+  private isConfigured = false;
 
-  constructor() {
-    // Don't configure immediately, wait for proper initialization
-  }
-
-  configure = () => {
-    if (Platform.OS !== 'web') {
-      try {
-        PushNotification.configure({
-          onNotification: function (notification) {
-            console.log('LOCAL NOTIFICATION ==>', notification);
-          },
-          popInitialNotification: true,
-          requestPermissions: Platform.OS === 'ios',
-        });
-
-        PushNotification.createChannel(
-          {
-            channelId: 'default-channel-id',
-            channelName: 'Default Channel',
-            channelDescription: 'A default channel for app notifications',
-            soundName: 'default',
-            importance: 4,
-            vibrate: true,
-          },
-          (created) => console.log(`createChannel 'default-channel-id' returned '${created}'`)
-        );
-      } catch (error) {
-        console.warn('Failed to configure push notifications:', error);
+  configure = async () => {
+    if (this.isConfigured) return;
+    
+    try {
+      console.log('Configuring notification service...');
+      
+      if (Platform.OS !== 'web') {
+        // Request permissions
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        
+        if (finalStatus !== 'granted') {
+          console.warn('Notification permissions not granted');
+          return;
+        }
+        
+        console.log('Notification permissions granted');
+        
+        // Set notification channel for Android
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'Listify Reminders',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#14B8A6',
+            sound: 'default',
+            enableVibrate: true,
+          });
+          console.log('Android notification channel created');
+        }
       }
+      
+      this.isConfigured = true;
+      console.log('Notification service configured successfully');
+    } catch (error) {
+      console.error('Error configuring notifications:', error);
     }
   };
 
-  scheduleAlarm = (title: string, body: string, date: Date): string | null => {
+  scheduleAlarm = async (title: string, body: string, date: Date): Promise<string | null> => {
     try {
-      const alarmId = Math.random().toString(36).substring(7);
-      const timeDifference = date.getTime() - new Date().getTime();
+      console.log(`--- Scheduling alarm ---`);
+      console.log(`Title: ${title}, Body: ${body}, Date: ${date.toISOString()}`);
       
-      console.log(`--- Scheduling alarm with timer ---`);
-      console.log(`ID: ${alarmId}, Title: ${title}, Date: ${date.toISOString()}`);
+      const now = new Date();
+      const timeDifference = date.getTime() - now.getTime();
+      
       console.log(`Time difference: ${timeDifference}ms (${Math.round(timeDifference / 1000 / 60)} minutes)`);
 
-      if (timeDifference > 0) {
-        if (Platform.OS === 'web') {
-          // For web, use regular setTimeout
-          const timerId = window.setTimeout(() => {
-            console.log(`Alarm triggered for: ${title}`);
-            alert(`Reminder: ${body}`);
-            this.activeTimers.delete(alarmId);
-          }, timeDifference);
-          
-          this.activeTimers.set(alarmId, timerId);
-        } else {
-          // For mobile, use BackgroundTimer if available, otherwise fallback to regular setTimeout
-          if (BackgroundTimer) {
-            const timerId = BackgroundTimer.setTimeout(() => {
-              console.log(`Alarm triggered for: ${title}`);
-              
-              try {
-                PushNotification.localNotification({
-                  channelId: 'default-channel-id',
-                  id: alarmId,
-                  title: title,
-                  message: body,
-                  importance: 4,
-                  priority: 'high',
-                  allowWhileIdle: true,
-                  playSound: true,
-                  soundName: 'default',
-                  vibrate: true,
-                  vibration: 300,
-                  ongoing: false,
-                  autoCancel: true,
-                });
-              } catch (error) {
-                console.error('Error showing notification:', error);
-              }
-
-              this.activeTimers.delete(alarmId);
-            }, timeDifference);
-
-            this.activeTimers.set(alarmId, timerId);
-          } else {
-            // Fallback to regular setTimeout
-            console.warn('BackgroundTimer not available, using regular setTimeout');
-            const timerId = setTimeout(() => {
-              console.log(`Alarm triggered for: ${title}`);
-              this.activeTimers.delete(alarmId);
-            }, timeDifference);
-            
-            this.activeTimers.set(alarmId, timerId);
-          }
-        }
-        
-        console.log(`Alarm scheduled successfully with ID: ${alarmId}`);
-        return alarmId;
-      } else {
+      if (timeDifference <= 0) {
         console.error('Cannot schedule alarm in the past');
         return null;
+      }
+
+      if (Platform.OS === 'web') {
+        // For web, use regular setTimeout with alert
+        const alarmId = Math.random().toString(36).substring(7);
+        
+        setTimeout(() => {
+          console.log(`Web alarm triggered for: ${title}`);
+          alert(`${title}\n\n${body}`);
+        }, timeDifference);
+        
+        console.log(`Web alarm scheduled with ID: ${alarmId}`);
+        return alarmId;
+      } else {
+        // For mobile, use Expo Notifications
+        await this.configure();
+        
+        const notificationId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: title,
+            body: body,
+            sound: 'default',
+            priority: Notifications.AndroidNotificationPriority.HIGH,
+            categoryIdentifier: 'reminder',
+          },
+          trigger: {
+            date: date,
+          },
+        });
+        
+        console.log(`Mobile alarm scheduled with notification ID: ${notificationId}`);
+        return notificationId;
       }
     } catch (error) {
       console.error('Error scheduling alarm:', error);
@@ -119,67 +109,34 @@ class NotificationService {
     }
   };
 
-  cancelAlarm = (alarmId: string) => {
+  cancelAlarm = async (alarmId: string) => {
     try {
       console.log(`Cancelling alarm with ID: ${alarmId}`);
       
-      const timerId = this.activeTimers.get(alarmId);
-      if (timerId) {
-        if (Platform.OS === 'web') {
-          window.clearTimeout(timerId);
-        } else if (BackgroundTimer) {
-          BackgroundTimer.clearTimeout(timerId);
-        } else {
-          clearTimeout(timerId);
-        }
-        this.activeTimers.delete(alarmId);
-        console.log(`Timer cancelled for alarm: ${alarmId}`);
-      }
-      
       if (Platform.OS !== 'web') {
-        try {
-          PushNotification.cancelLocalNotification(alarmId);
-        } catch (error) {
-          console.warn('Error cancelling push notification:', error);
-        }
+        await Notifications.cancelScheduledNotificationAsync(alarmId);
+        console.log(`Notification cancelled for alarm: ${alarmId}`);
       }
-      
     } catch (error) {
       console.error('Error cancelling alarm:', error);
     }
   };
 
-  cancelAllAlarms = () => {
+  cancelAllAlarms = async () => {
     try {
       console.log('Cancelling all alarms and notifications');
       
-      this.activeTimers.forEach((timerId, alarmId) => {
-        if (Platform.OS === 'web') {
-          window.clearTimeout(timerId);
-        } else if (BackgroundTimer) {
-          BackgroundTimer.clearTimeout(timerId);
-        } else {
-          clearTimeout(timerId);
-        }
-        console.log(`Cancelled timer for alarm: ${alarmId}`);
-      });
-      this.activeTimers.clear();
-      
       if (Platform.OS !== 'web') {
-        try {
-          PushNotification.cancelAllLocalNotifications();
-        } catch (error) {
-          console.warn('Error cancelling all push notifications:', error);
-        }
+        await Notifications.cancelAllScheduledNotificationsAsync();
+        console.log('All scheduled notifications cancelled');
       }
-      
     } catch (error) {
       console.error('Error cancelling all alarms:', error);
     }
   };
 
   // Legacy methods for backward compatibility
-  scheduleNotification = (title: string, body: string, date: Date): string | null => {
+  scheduleNotification = (title: string, body: string, date: Date): Promise<string | null> => {
     console.warn('scheduleNotification is deprecated, use scheduleAlarm instead');
     return this.scheduleAlarm(title, body, date);
   };
