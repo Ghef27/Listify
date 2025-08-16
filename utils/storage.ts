@@ -168,4 +168,55 @@ export class StorageService {
       console.error('Error saving lists:', error);
     }
   }
+
+  static async addList(name: string, color: string): Promise<void> {
+    try {
+      const lists = await this.getLists();
+      const newList: ListData = { name, color };
+      lists.push(newList);
+      await this.saveLists(lists);
+    } catch (error) {
+      console.error('Error adding list:', error);
+    }
+  }
+
+  static async updateList(oldName: string, newName: string, color: string): Promise<void> {
+    try {
+      const [lists, notes] = await Promise.all([
+        this.getLists(),
+        this.getNotes()
+      ]);
+      
+      // Update the list
+      const listIndex = lists.findIndex(list => list.name === oldName);
+      if (listIndex !== -1) {
+        lists[listIndex] = { name: newName, color };
+        await this.saveLists(lists);
+      }
+      
+      // Update all notes that reference this list
+      if (oldName !== newName) {
+        const updatedNotes = notes.map(note => 
+          note.listName === oldName 
+            ? { ...note, listName: newName, updatedAt: new Date() }
+            : note
+        );
+        await this.saveNotes(updatedNotes);
+      }
+    } catch (error) {
+      console.error('Error updating list:', error);
+    }
+  }
+
+  static async getRecentNotes(limit: number = 5): Promise<Note[]> {
+    try {
+      const notes = await this.getNotes();
+      return notes
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, limit);
+    } catch (error) {
+      console.error('Error getting recent notes:', error);
+      return [];
+    }
+  }
 }

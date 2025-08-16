@@ -10,25 +10,27 @@ class NotificationService {
   }
 
   configure = () => {
-    PushNotification.configure({
-      onNotification: function (notification) {
-        console.log('LOCAL NOTIFICATION ==>', notification);
-      },
-      popInitialNotification: true,
-      requestPermissions: Platform.OS === 'ios',
-    });
+    if (Platform.OS !== 'web') {
+      PushNotification.configure({
+        onNotification: function (notification) {
+          console.log('LOCAL NOTIFICATION ==>', notification);
+        },
+        popInitialNotification: true,
+        requestPermissions: Platform.OS === 'ios',
+      });
 
-    PushNotification.createChannel(
-      {
-        channelId: 'default-channel-id',
-        channelName: 'Default Channel',
-        channelDescription: 'A default channel for app notifications',
-        soundName: 'default',
-        importance: 4, // Importance.HIGH
-        vibrate: true,
-      },
-      (created) => console.log(`createChannel 'default-channel-id' returned '${created}'`)
-    );
+      PushNotification.createChannel(
+        {
+          channelId: 'default-channel-id',
+          channelName: 'Default Channel',
+          channelDescription: 'A default channel for app notifications',
+          soundName: 'default',
+          importance: 4,
+          vibrate: true,
+        },
+        (created) => console.log(`createChannel 'default-channel-id' returned '${created}'`)
+      );
+    }
   };
 
   scheduleAlarm = (title: string, body: string, date: Date): string | null => {
@@ -40,34 +42,42 @@ class NotificationService {
       console.log(`ID: ${alarmId}, Title: ${title}, Date: ${date.toISOString()}`);
       console.log(`Time difference: ${timeDifference}ms (${Math.round(timeDifference / 1000 / 60)} minutes)`);
 
-      // The timer can only be started if the time is in the future
       if (timeDifference > 0) {
-        const timerId = BackgroundTimer.setTimeout(() => {
-          console.log(`Alarm triggered for: ${title}`);
+        if (Platform.OS === 'web') {
+          // For web, use regular setTimeout
+          const timerId = window.setTimeout(() => {
+            console.log(`Alarm triggered for: ${title}`);
+            alert(`Reminder: ${body}`);
+            this.activeTimers.delete(alarmId);
+          }, timeDifference);
           
-          // Trigger the local notification when alarm fires
-          PushNotification.localNotification({
-            channelId: 'default-channel-id',
-            id: alarmId,
-            title: title,
-            message: body,
-            importance: 4,
-            priority: 'high',
-            allowWhileIdle: true,
-            playSound: true,
-            soundName: 'default',
-            vibrate: true,
-            vibration: 300,
-            ongoing: false,
-            autoCancel: true,
-          });
+          this.activeTimers.set(alarmId, timerId);
+        } else {
+          // For mobile, use BackgroundTimer
+          const timerId = BackgroundTimer.setTimeout(() => {
+            console.log(`Alarm triggered for: ${title}`);
+            
+            PushNotification.localNotification({
+              channelId: 'default-channel-id',
+              id: alarmId,
+              title: title,
+              message: body,
+              importance: 4,
+              priority: 'high',
+              allowWhileIdle: true,
+              playSound: true,
+              soundName: 'default',
+              vibrate: true,
+              vibration: 300,
+              ongoing: false,
+              autoCancel: true,
+            });
 
-          // Clean up the timer reference
-          this.activeTimers.delete(alarmId);
-        }, timeDifference);
+            this.activeTimers.delete(alarmId);
+          }, timeDifference);
 
-        // Store the timer ID so we can cancel it later if needed
-        this.activeTimers.set(alarmId, timerId);
+          this.activeTimers.set(alarmId, timerId);
+        }
         
         console.log(`Alarm scheduled successfully with ID: ${alarmId}`);
         return alarmId;
@@ -85,16 +95,20 @@ class NotificationService {
     try {
       console.log(`Cancelling alarm with ID: ${alarmId}`);
       
-      // Cancel the background timer
       const timerId = this.activeTimers.get(alarmId);
       if (timerId) {
-        BackgroundTimer.clearTimeout(timerId);
+        if (Platform.OS === 'web') {
+          window.clearTimeout(timerId);
+        } else {
+          BackgroundTimer.clearTimeout(timerId);
+        }
         this.activeTimers.delete(alarmId);
-        console.log(`Background timer cancelled for alarm: ${alarmId}`);
+        console.log(`Timer cancelled for alarm: ${alarmId}`);
       }
       
-      // Also cancel any existing notification with this ID
-      PushNotification.cancelLocalNotification(alarmId);
+      if (Platform.OS !== 'web') {
+        PushNotification.cancelLocalNotification(alarmId);
+      }
       
     } catch (error) {
       console.error('Error cancelling alarm:', error);
@@ -105,15 +119,19 @@ class NotificationService {
     try {
       console.log('Cancelling all alarms and notifications');
       
-      // Cancel all background timers
       this.activeTimers.forEach((timerId, alarmId) => {
-        BackgroundTimer.clearTimeout(timerId);
+        if (Platform.OS === 'web') {
+          window.clearTimeout(timerId);
+        } else {
+          BackgroundTimer.clearTimeout(timerId);
+        }
         console.log(`Cancelled timer for alarm: ${alarmId}`);
       });
       this.activeTimers.clear();
       
-      // Cancel all local notifications
-      PushNotification.cancelAllLocalNotifications();
+      if (Platform.OS !== 'web') {
+        PushNotification.cancelAllLocalNotifications();
+      }
       
     } catch (error) {
       console.error('Error cancelling all alarms:', error);
