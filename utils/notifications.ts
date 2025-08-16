@@ -138,7 +138,7 @@ class AlarmService {
         console.log(`Web timeout cleared for alarm: ${alarmId}`);
       } else {
         try {
-          const { default: * as Notifications } = await import('expo-notifications');
+          const Notifications = await import('expo-notifications');
           await Notifications.cancelScheduledNotificationAsync(identifier as string);
           console.log(`Notification cancelled for alarm: ${alarmId}`);
         } catch (error) {
@@ -166,7 +166,7 @@ class AlarmService {
         }
       } else {
         try {
-          const { default: * as Notifications } = await import('expo-notifications');
+          const Notifications = await import('expo-notifications');
           await Notifications.cancelAllScheduledNotificationsAsync();
           console.log('All scheduled notifications cancelled');
         } catch (error) {
