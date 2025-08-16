@@ -92,52 +92,51 @@ export class StorageService {
     reminderDateTime: Date
   ): Promise<void> {
     try {
-      // --- DIAGNOSTIC LOGGING ---
       console.log('--- StorageService: setNoteReminder triggered ---');
-      console.log(`[5] Received noteId: ${noteId}`);
-      console.log(`[6] Received reminderDateTime: ${reminderDateTime.toISOString()}`);
+      console.log(`Received noteId: ${noteId}`);
+      console.log(`Received reminderDateTime: ${reminderDateTime.toISOString()}`);
 
       const notes = await this.getNotes();
       const note = notes.find(n => n.id === noteId);
 
       if (!note) {
-        console.error('[!] Note not found in storage!');
+        console.error('Note not found in storage!');
         return;
       }
 
       if (note.notificationId) {
-        console.log(`[7] Cancelling existing alarm: ${note.notificationId}`);
+        console.log(`Cancelling existing alarm: ${note.notificationId}`);
         await notificationManager.cancelAlarm(note.notificationId);
       }
 
       const fireAt = new Date(reminderDateTime);
-      console.log(`[8] Created 'fireAt' Date object: ${fireAt.toISOString()}`);
+      console.log(`Created 'fireAt' Date object: ${fireAt.toISOString()}`);
       
       const now = new Date();
       if (fireAt <= now) {
-        console.error(`[!] CRITICAL: Time is in the past! fireAt: ${fireAt.toISOString()}, now: ${now.toISOString()}`);
+        console.error(`CRITICAL: Time is in the past! fireAt: ${fireAt.toISOString()}, now: ${now.toISOString()}`);
         return;
       }
 
-      console.log('[9] Calling NotificationService.scheduleAlarm...');
+      console.log('Calling NotificationService.scheduleAlarm...');
       const alarmId = await notificationManager.scheduleAlarm(
         'Listify Reminder',
         note.text,
         fireAt
       );
       
-      console.log(`[12] Received alarmId from service: ${alarmId}`);
+      console.log(`Received alarmId from service: ${alarmId}`);
 
       await this.updateNote(noteId, {
         reminderDate: fireAt,
         notificationId: alarmId || undefined,
       });
-      console.log('[13] Note updated in storage with new reminder info.');
+      console.log('Note updated in storage with new reminder info.');
 
     } catch (error) {
       console.error('Error in setNoteReminder:', error);
     }
-    console.log('--- StorageService: setNoteReminder finished ---');
+    console.log('StorageService: setNoteReminder finished');
   }
 
   // ... other functions like getLists, saveLists etc. remain the same

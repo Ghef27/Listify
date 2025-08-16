@@ -2,14 +2,22 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
-import { notificationManager } from '@/utils/notifications';
 
 export default function RootLayout() {
   useFrameworkReady();
 
   useEffect(() => {
-    // Initialize notification service when app starts
-    notificationManager.configure();
+    // Initialize alarm service when app starts
+    const initializeAlarms = async () => {
+      try {
+        const { notificationManager } = await import('@/utils/notifications');
+        await notificationManager.initialize();
+      } catch (error) {
+        console.log('Alarm service initialization skipped:', error.message);
+      }
+    };
+    
+    initializeAlarms();
   }, []);
 
   return (

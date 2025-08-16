@@ -1,72 +1,66 @@
-import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 
-// Configure notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+// Simple alarm service that works reliably across platforms
+class AlarmService {
+  private activeTimers = new Map<string, NodeJS.Timeout>();
+  private isInitialized = false;
 
-class NotificationService {
-  private isConfigured = false;
-  private activeAlarms = new Map<string, any>();
-
-  configure = async () => {
-    if (this.isConfigured) return;
+  async initialize() {
+    if (this.isInitialized) return;
     
     try {
-      console.log('Configuring notification service...');
-      
       if (Platform.OS !== 'web') {
+        // For mobile platforms, we'll use a hybrid approach
+        // Try to import expo-notifications dynamically
+        const { default: * as Notifications } = await import('expo-notifications');
+        
+        // Configure notification handler
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: false,
+          }),
+        });
+
         // Request permissions
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        
-        if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
-        }
-        
-        if (finalStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status !== 'granted') {
           console.warn('Notification permissions not granted');
-          return;
+        } else {
+          console.log('Notification permissions granted');
         }
-        
-        console.log('Notification permissions granted');
-        
-        // Set notification channel for Android
+
+        // Set up Android channel
         if (Platform.OS === 'android') {
-          await Notifications.setNotificationChannelAsync('default', {
-            name: 'Listify Reminders',
+          await Notifications.setNotificationChannelAsync('reminders', {
+            name: 'Reminders',
             importance: Notifications.AndroidImportance.HIGH,
             vibrationPattern: [0, 250, 250, 250],
             lightColor: '#14B8A6',
             sound: 'default',
-            enableVibrate: true,
           });
-          console.log('Android notification channel created');
         }
       }
       
-      this.isConfigured = true;
-      console.log('Notification service configured successfully');
+      this.isInitialized = true;
+      console.log('Alarm service initialized successfully');
     } catch (error) {
-      console.error('Error configuring notifications:', error);
+      console.error('Error initializing alarm service:', error);
+      // Continue without notifications if they fail to initialize
+      this.isInitialized = true;
     }
   };
 
   scheduleAlarm = async (title: string, body: string, date: Date): Promise<string | null> => {
     try {
-      console.log(`--- Scheduling alarm ---`);
-      console.log(`Title: ${title}, Body: ${body}, Date: ${date.toISOString()}`);
+      await this.initialize();
       
       const now = new Date();
       const timeDifference = date.getTime() - now.getTime();
       
-      console.log(`Time difference: ${timeDifference}ms (${Math.round(timeDifference / 1000 / 60)} minutes)`);
+      console.log(`Scheduling alarm: ${title} for ${date.toISOString()}`);
+      console.log(`Time difference: ${Math.round(timeDifference / 1000 / 60)} minutes`);
 
       if (timeDifference <= 0) {
         console.error('Cannot schedule alarm in the past');
@@ -76,37 +70,52 @@ class NotificationService {
       const alarmId = Math.random().toString(36).substring(7);
 
       if (Platform.OS === 'web') {
-        // For web, use regular setTimeout with alert
+        // Web implementation with browser alert
         const timeoutId = setTimeout(() => {
-          console.log(`Web alarm triggered for: ${title}`);
-          alert(`${title}\n\n${body}`);
-          this.activeAlarms.delete(alarmId);
+          console.log(`Alarm triggered: ${title}`);
+          alert(`🔔 ${title}\n\n${body}`);
+          this.activeTimers.delete(alarmId);
         }, timeDifference);
         
-        this.activeAlarms.set(alarmId, timeoutId);
+        this.activeTimers.set(alarmId, timeoutId);
         console.log(`Web alarm scheduled with ID: ${alarmId}`);
         return alarmId;
       } else {
-        // For mobile, use Expo Notifications with proper scheduling
-        await this.configure();
-        
-        const notificationId = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: title,
-            body: body,
-            sound: 'default',
-            priority: Notifications.AndroidNotificationPriority.HIGH,
-            categoryIdentifier: 'reminder',
-            data: { alarmId },
-          },
-          trigger: {
-            date: date,
-          },
-        });
-        
-        this.activeAlarms.set(alarmId, notificationId);
-        console.log(`Mobile alarm scheduled with notification ID: ${notificationId}, alarm ID: ${alarmId}`);
-        return alarmId;
+        // Mobile implementation
+        try {
+          const { default: * as Notifications } = await import('expo-notifications');
+          
+          const notificationId = await Notifications.scheduleNotificationAsync({
+            content: {
+              title: title,
+              body: body,
+              sound: 'default',
+              priority: Notifications.AndroidNotificationPriority.HIGH,
+              categoryIdentifier: 'reminder',
+              data: { alarmId },
+            },
+            trigger: {
+              date: date,
+            },
+          });
+          
+          this.activeTimers.set(alarmId, notificationId);
+          console.log(`Mobile notification scheduled with ID: ${notificationId}`);
+          return alarmId;
+        } catch (notificationError) {
+          console.error('Expo notifications failed, using fallback timer:', notificationError);
+          
+          // Fallback to simple timer with alert
+          const timeoutId = setTimeout(() => {
+            console.log(`Fallback alarm triggered: ${title}`);
+            Alert.alert(title, body);
+            this.activeTimers.delete(alarmId);
+          }, timeDifference);
+          
+          this.activeTimers.set(alarmId, timeoutId);
+          console.log(`Fallback alarm scheduled with ID: ${alarmId}`);
+          return alarmId;
+        }
       }
     } catch (error) {
       console.error('Error scheduling alarm:', error);
@@ -118,21 +127,28 @@ class NotificationService {
     try {
       console.log(`Cancelling alarm with ID: ${alarmId}`);
       
-      const identifier = this.activeAlarms.get(alarmId);
+      const identifier = this.activeTimers.get(alarmId);
       if (!identifier) {
         console.log(`No active alarm found for ID: ${alarmId}`);
         return;
       }
 
       if (Platform.OS === 'web') {
-        clearTimeout(identifier);
+        clearTimeout(identifier as NodeJS.Timeout);
         console.log(`Web timeout cleared for alarm: ${alarmId}`);
       } else {
-        await Notifications.cancelScheduledNotificationAsync(identifier);
-        console.log(`Notification cancelled for alarm: ${alarmId}`);
+        try {
+          const { default: * as Notifications } = await import('expo-notifications');
+          await Notifications.cancelScheduledNotificationAsync(identifier as string);
+          console.log(`Notification cancelled for alarm: ${alarmId}`);
+        } catch (error) {
+          // If expo-notifications fails, try clearing as timeout
+          clearTimeout(identifier as NodeJS.Timeout);
+          console.log(`Fallback timeout cleared for alarm: ${alarmId}`);
+        }
       }
       
-      this.activeAlarms.delete(alarmId);
+      this.activeTimers.delete(alarmId);
     } catch (error) {
       console.error('Error cancelling alarm:', error);
     }
@@ -140,40 +156,38 @@ class NotificationService {
 
   cancelAllAlarms = async () => {
     try {
-      console.log('Cancelling all alarms and notifications');
+      console.log('Cancelling all alarms');
       
       if (Platform.OS === 'web') {
         // Clear all web timeouts
-        for (const [alarmId, timeoutId] of this.activeAlarms.entries()) {
-          clearTimeout(timeoutId);
+        for (const [alarmId, timeoutId] of this.activeTimers.entries()) {
+          clearTimeout(timeoutId as NodeJS.Timeout);
           console.log(`Cleared web timeout for alarm: ${alarmId}`);
         }
       } else {
-        await Notifications.cancelAllScheduledNotificationsAsync();
-        console.log('All scheduled notifications cancelled');
+        try {
+          const { default: * as Notifications } = await import('expo-notifications');
+          await Notifications.cancelAllScheduledNotificationsAsync();
+          console.log('All scheduled notifications cancelled');
+        } catch (error) {
+          // Fallback: clear all as timeouts
+          for (const [alarmId, identifier] of this.activeTimers.entries()) {
+            clearTimeout(identifier as NodeJS.Timeout);
+            console.log(`Fallback timeout cleared for alarm: ${alarmId}`);
+          }
+        }
       }
       
-      this.activeAlarms.clear();
+      this.activeTimers.clear();
     } catch (error) {
       console.error('Error cancelling all alarms:', error);
     }
   };
 
-  // Legacy methods for backward compatibility
-  scheduleNotification = (title: string, body: string, date: Date): Promise<string | null> => {
-    console.warn('scheduleNotification is deprecated, use scheduleAlarm instead');
-    return this.scheduleAlarm(title, body, date);
-  };
-
-  cancelNotification = (notificationId: string) => {
-    console.warn('cancelNotification is deprecated, use cancelAlarm instead');
-    this.cancelAlarm(notificationId);
-  };
-
-  cancelAllNotifications = () => {
-    console.warn('cancelAllNotifications is deprecated, use cancelAllAlarms instead');
-    this.cancelAllAlarms();
+  // Get active alarm count for debugging
+  getActiveAlarmCount = () => {
+    return this.activeTimers.size;
   };
 }
 
-export const notificationManager = new NotificationService();
+export const notificationManager = new AlarmService();

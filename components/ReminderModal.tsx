@@ -38,19 +38,18 @@ export function ReminderModal({ visible, onClose, onSave, noteText }: ReminderMo
   };
 
   const handleSave = () => {
-    // --- DIAGNOSTIC LOGGING ---
     console.log('--- ReminderModal: handleSave triggered ---');
-    console.log(`[1] Current reminderDateTime state: ${reminderDateTime.toISOString()}`);
+    console.log(`Current reminderDateTime state: ${reminderDateTime.toISOString()}`);
 
     if (reminderDateTime > new Date()) {
-      console.log('[2] Date is in the future. Calling onSave...');
+      console.log('Date is in the future. Calling onSave...');
       onSave(reminderDateTime);
       onClose();
     } else {
-      console.log('[2] Date is in the past. Showing alert.');
+      console.log('Date is in the past. Showing alert.');
       Alert.alert('Invalid Time', 'Please select a future date and time for the reminder.');
     }
-    console.log('--- ReminderModal: handleSave finished ---');
+    console.log('ReminderModal: handleSave finished');
   };
 
   const formatDate = (date: Date) => {
