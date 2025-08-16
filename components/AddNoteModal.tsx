@@ -24,6 +24,8 @@ interface AddNoteModalProps {
 
 export function AddNoteModal({ visible, onClose, onSave, initialList, lists }: AddNoteModalProps) {
   const [text, setText] = useState('');
+  const scrollViewRef = React.useRef<ScrollView>(null);
+  const itemLayouts = React.useRef<Record<string, number>>({}); // ADDED FOR JUMP SCROLL
   const [selectedList, setSelectedList] = useState(initialList || lists[0]?.name || '');
   
   const { 
@@ -34,12 +36,35 @@ export function AddNoteModal({ visible, onClose, onSave, initialList, lists }: A
     resetTranscript 
   } = useSpeechRecognition();
 
-  useEffect(() => {
-    if (transcript) {
-      setText(prev => prev + (prev ? ' ' : '') + transcript);
-      resetTranscript();
+useEffect(() => {
+  // Only run this effect if the modal is visible
+  if (!visible) return;
+
+  // Wait for the UI to settle after a list is selected or on initial render
+  setTimeout(() => {
+    if (scrollViewRef.current && selectedList) {
+      const xOffset = itemLayouts.current[selectedList];
+      if (xOffset !== undefined) {
+        scrollViewRef.current.scrollTo({ x: xOffset, animated: true });
+      }
     }
-  }, [transcript, resetTranscript]);
+  }, 100);
+}, [selectedList, visible, lists]);
+
+//Added this from gemini for scroll jump
+
+useEffect(() => {
+    if (scrollViewRef.current && lists.length > 0 && initialList) {
+      const selectedIndex = lists.findIndex(list => list.name === initialList);
+      if (selectedIndex !== -1) {
+        // You may need to adjust this value based on the actual chip width
+        const itemWidth = 100;
+        const xOffset = selectedIndex * itemWidth;
+
+        scrollViewRef.current.scrollTo({ x: xOffset, animated: true });
+      }
+    }
+  }, [lists, initialList]);
 
   const handleSave = () => {
     if (text.trim()) {
@@ -79,24 +104,33 @@ export function AddNoteModal({ visible, onClose, onSave, initialList, lists }: A
 
         <View style={styles.content}>
           <Text style={styles.sectionTitle}>Select List</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listsContainer}>
+         <ScrollView 
+  ref={scrollViewRef}
+  horizontal 
+  showsHorizontalScrollIndicator={false} 
+  style={styles.listsContainer}
+>
             {lists.map((list) => (
-              <TouchableOpacity
-                key={list.name}
-                style={[
-                  styles.listChip,
-                  { borderColor: list.color },
-                  selectedList === list.name && { backgroundColor: list.color }
-                ]}
-                onPress={() => setSelectedList(list.name)}
-              >
-                <Text style={[
-                  styles.listChipText,
-                  selectedList === list.name && styles.listChipTextSelected
-                ]}>
-                  {list.name}
-                </Text>
-              </TouchableOpacity>
+<TouchableOpacity
+  key={list.name}
+  onLayout={(event) => {
+    // This correctly gets the x position of the chip
+    itemLayouts.current[list.name] = event.nativeEvent.layout.x;
+  }}
+  style={[
+    styles.listChip,
+    { borderColor: list.color },
+    selectedList === list.name && { backgroundColor: list.color }
+  ]}
+  onPress={() => setSelectedList(list.name)}
+>
+  <Text style={[
+    styles.listChipText,
+    selectedList === list.name && styles.listChipTextSelected
+  ]}>
+    {list.name}
+  </Text>
+</TouchableOpacity>
             ))}
           </ScrollView>
         </View>
