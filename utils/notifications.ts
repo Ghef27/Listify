@@ -12,7 +12,7 @@ class AlarmService {
       if (Platform.OS !== 'web') {
         // For mobile platforms, we'll use a hybrid approach
         // Try to import expo-notifications dynamically
-        const { default: * as Notifications } = await import('expo-notifications');
+        const Notifications = await import('expo-notifications');
         
         // Configure notification handler
         Notifications.setNotificationHandler({
