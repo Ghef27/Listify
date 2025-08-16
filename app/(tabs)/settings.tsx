@@ -30,9 +30,8 @@ export default function SettingsScreen() {
   const [newListColor, setNewListColor] = useState('#14B8A6');
 
   const colors = [
-    '#14B8A6', '#DC2626', '#10B981', '#CA8A04',
-    '#7C3AED', '#DB2777', '#059669', '#D97706',
-    '#4F46E5', '#BE185D', '#047857', '#B45309'
+    '#14B8A6','#10B981', '#059669','#047857','#86e546ff','#f80303ff','#DC2626', '#DB2777', '#BE185D','#B45309','#D97706','#CA8A04', '#d9c87aff',
+    '#e0e546ff','#46b5e5ff','#7C3AED',    '#4F46E5',   '#a546e5ff',    '#081401ff' 
   ];
 
   const loadLists = useCallback(async () => {
