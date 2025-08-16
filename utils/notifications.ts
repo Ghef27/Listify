@@ -12,6 +12,7 @@ Notifications.setNotificationHandler({
 
 class NotificationService {
   private isConfigured = false;
+  private activeAlarms = new Map<string, any>();
 
   configure = async () => {
     if (this.isConfigured) return;
@@ -72,19 +73,21 @@ class NotificationService {
         return null;
       }
 
+      const alarmId = Math.random().toString(36).substring(7);
+
       if (Platform.OS === 'web') {
         // For web, use regular setTimeout with alert
-        const alarmId = Math.random().toString(36).substring(7);
-        
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           console.log(`Web alarm triggered for: ${title}`);
           alert(`${title}\n\n${body}`);
+          this.activeAlarms.delete(alarmId);
         }, timeDifference);
         
+        this.activeAlarms.set(alarmId, timeoutId);
         console.log(`Web alarm scheduled with ID: ${alarmId}`);
         return alarmId;
       } else {
-        // For mobile, use Expo Notifications
+        // For mobile, use Expo Notifications with proper scheduling
         await this.configure();
         
         const notificationId = await Notifications.scheduleNotificationAsync({
@@ -94,14 +97,16 @@ class NotificationService {
             sound: 'default',
             priority: Notifications.AndroidNotificationPriority.HIGH,
             categoryIdentifier: 'reminder',
+            data: { alarmId },
           },
           trigger: {
             date: date,
           },
         });
         
-        console.log(`Mobile alarm scheduled with notification ID: ${notificationId}`);
-        return notificationId;
+        this.activeAlarms.set(alarmId, notificationId);
+        console.log(`Mobile alarm scheduled with notification ID: ${notificationId}, alarm ID: ${alarmId}`);
+        return alarmId;
       }
     } catch (error) {
       console.error('Error scheduling alarm:', error);
@@ -113,10 +118,21 @@ class NotificationService {
     try {
       console.log(`Cancelling alarm with ID: ${alarmId}`);
       
-      if (Platform.OS !== 'web') {
-        await Notifications.cancelScheduledNotificationAsync(alarmId);
+      const identifier = this.activeAlarms.get(alarmId);
+      if (!identifier) {
+        console.log(`No active alarm found for ID: ${alarmId}`);
+        return;
+      }
+
+      if (Platform.OS === 'web') {
+        clearTimeout(identifier);
+        console.log(`Web timeout cleared for alarm: ${alarmId}`);
+      } else {
+        await Notifications.cancelScheduledNotificationAsync(identifier);
         console.log(`Notification cancelled for alarm: ${alarmId}`);
       }
+      
+      this.activeAlarms.delete(alarmId);
     } catch (error) {
       console.error('Error cancelling alarm:', error);
     }
@@ -126,10 +142,18 @@ class NotificationService {
     try {
       console.log('Cancelling all alarms and notifications');
       
-      if (Platform.OS !== 'web') {
+      if (Platform.OS === 'web') {
+        // Clear all web timeouts
+        for (const [alarmId, timeoutId] of this.activeAlarms.entries()) {
+          clearTimeout(timeoutId);
+          console.log(`Cleared web timeout for alarm: ${alarmId}`);
+        }
+      } else {
         await Notifications.cancelAllScheduledNotificationsAsync();
         console.log('All scheduled notifications cancelled');
       }
+      
+      this.activeAlarms.clear();
     } catch (error) {
       console.error('Error cancelling all alarms:', error);
     }
