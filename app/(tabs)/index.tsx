@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ChevronRight, Clock } from 'lucide-react-native';
+import { ChevronRight, Clock, AlertCircle } from 'lucide-react-native';
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { Poppins_400Regular, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import { StorageService } from '@/utils/storage';
@@ -17,6 +17,7 @@ import { FloatingActionButton } from '@/components/FloatingActionButton';
 import { AddNoteModal } from '@/components/AddNoteModal';
 import { ReminderModal } from '@/components/ReminderModal';
 import { NoteItem } from '@/components/NoteItem';
+import { ReminderTimer } from '@/components/ReminderTimer';
 import { Note, ListData } from '@/types';
 
 // ============================================
@@ -42,6 +43,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const [lists, setLists] = useState<ListData[]>([]);
   const [recentNotes, setRecentNotes] = useState<Note[]>([]);
+  const [actionNeededNotes, setActionNeededNotes] = useState<Note[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
@@ -58,9 +60,10 @@ export default function HomeScreen() {
   });
 
   const loadData = useCallback(async () => {
-    const [listsData, notes] = await Promise.all([
+    const [listsData, notes, actionNotes] = await Promise.all([
       StorageService.getLists(),
-      StorageService.getNotes()
+      StorageService.getNotes(),
+      StorageService.getActionNeededNotes()
     ]);
     
     // Calculate note counts for each list
@@ -70,6 +73,7 @@ export default function HomeScreen() {
     }));
     
     setLists(listsWithCounts);
+    setActionNeededNotes(actionNotes);
     
     // Get recent notes (last 5)
     const recent = await StorageService.getRecentNotes(5);
@@ -109,25 +113,26 @@ export default function HomeScreen() {
     setShowReminderModal(true);
   };
 
-const handleSaveReminder = async (reminderDate: Date) => {
-  if (!selectedNoteForReminder) return;
+  const handleSaveReminder = async (reminderDate: Date) => {
+    if (!selectedNoteForReminder) return;
 
-  try {
-    // Pass the combined date/time directly
-    await StorageService.setNoteReminder(
-      selectedNoteForReminder.id,
-      reminderDate
-    );
+    try {
+      await StorageService.setNoteReminder(
+        selectedNoteForReminder.id,
+        reminderDate
+      );
 
-    // Refresh data and reset selection
+      await loadData();
+      setSelectedNoteForReminder(null);
+    } catch (error) {
+      console.error('Error saving reminder:', error);
+    }
+  };
+
+  const handleReminderExpire = async (noteId: string) => {
+    await StorageService.updateNote(noteId, { reminderExpired: true });
     await loadData();
-    setSelectedNoteForReminder(null);
-
-  } catch (error) {
-    console.error('Error saving reminder:', error);
-  }
-};
-
+  };
 
   const navigateToList = (listName: string) => {
     router.push(`/list/${encodeURIComponent(listName)}`);
@@ -170,6 +175,40 @@ const handleSaveReminder = async (reminderDate: Date) => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        {actionNeededNotes.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <AlertCircle size={20} color="#F59E0B" />
+              <Text style={styles.sectionTitle}>Action Needed</Text>
+            </View>
+            {actionNeededNotes.map((note) => (
+              <View key={note.id} style={[
+                styles.actionNeededItem,
+                note.reminderExpired && styles.actionNeededItemExpired
+              ]}>
+                <NoteItem
+                  note={note}
+                  onToggleComplete={handleToggleComplete}
+                  onDelete={handleDeleteNote}
+                  onSetReminder={handleSetReminder}
+                  showDeleteButton={true}
+                  showReminderButton={true}
+                  onPress={(note) => navigateToList(note.listName)}
+                />
+                {note.reminderDate && (
+                  <View style={styles.timerContainer}>
+                    <ReminderTimer
+                      reminderDate={new Date(note.reminderDate)}
+                      isExpired={note.reminderExpired}
+                      onExpire={() => handleReminderExpire(note.id)}
+                    />
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your Lists</Text>
           {lists.map((list) => (
@@ -340,5 +379,20 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 22,
+  },
+  actionNeededItem: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  actionNeededItemExpired: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  timerContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
 });

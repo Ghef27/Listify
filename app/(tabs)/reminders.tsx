@@ -11,6 +11,7 @@ import { Bell, Clock } from 'lucide-react-native';
 import { StorageService } from '@/utils/storage';
 import { NoteItem } from '@/components/NoteItem';
 import { ReminderModal } from '@/components/ReminderModal';
+import { ReminderTimer } from '@/components/ReminderTimer';
 import { Note } from '@/types';
 
 export default function RemindersScreen() {
@@ -61,25 +62,26 @@ export default function RemindersScreen() {
     setShowReminderModal(true);
   };
 
-const handleSaveReminder = async (reminderDate: Date) => {
-  if (!selectedNoteForReminder) return;
+  const handleSaveReminder = async (reminderDate: Date) => {
+    if (!selectedNoteForReminder) return;
 
-  try {
-    // Pass the combined date/time directly
-    await StorageService.setNoteReminder(
-      selectedNoteForReminder.id,
-      reminderDate
-    );
+    try {
+      await StorageService.setNoteReminder(
+        selectedNoteForReminder.id,
+        reminderDate
+      );
 
-    // Refresh notes and reset selection
+      await loadNotesWithReminders();
+      setSelectedNoteForReminder(null);
+    } catch (error) {
+      console.error('Error saving reminder:', error);
+    }
+  };
+
+  const handleReminderExpire = async (noteId: string) => {
+    await StorageService.updateNote(noteId, { reminderExpired: true });
     await loadNotesWithReminders();
-    setSelectedNoteForReminder(null);
-
-  } catch (error) {
-    console.error('Error saving reminder:', error);
-  }
-};
-
+  };
 
   const formatReminderTime = (reminderDate: Date) => {
     const now = new Date();
@@ -138,7 +140,10 @@ const handleSaveReminder = async (reminderDate: Date) => {
           </View>
         ) : (
           notesWithReminders.map((note) => (
-            <View key={note.id} style={styles.reminderItem}>
+            <View key={note.id} style={[
+              styles.reminderItem,
+              note.reminderExpired && styles.reminderItemExpired
+            ]}>
               <View style={styles.reminderHeader}>
                 <View style={styles.reminderTimeContainer}>
                   <Clock size={16} color={isReminderPast(new Date(note.reminderDate!)) ? "#EF4444" : "#14B8A6"} />
@@ -154,6 +159,13 @@ const handleSaveReminder = async (reminderDate: Date) => {
                     <Text style={styles.pastBadgeText}>Past</Text>
                   </View>
                 )}
+              </View>
+              <View style={styles.timerContainer}>
+                <ReminderTimer
+                  reminderDate={new Date(note.reminderDate!)}
+                  isExpired={note.reminderExpired}
+                  onExpire={() => handleReminderExpire(note.id)}
+                />
               </View>
               <NoteItem
                 note={note}
@@ -210,6 +222,12 @@ const styles = StyleSheet.create({
   reminderItem: {
     marginVertical: 4,
   },
+  reminderItemExpired: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
   reminderHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -242,6 +260,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#EF4444',
+  },
+  timerContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
   },
   emptyState: {
     alignItems: 'center',

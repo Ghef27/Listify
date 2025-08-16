@@ -54,9 +54,6 @@ export default function SettingsScreen() {
           text: 'Delete All',
           style: 'destructive',
           onPress: async () => {
-            // Cancel all active alarms before clearing data
-            const { notificationManager } = await import('@/utils/notifications');
-            await notificationManager.cancelAllAlarms();
             await StorageService.saveNotes([]);
             Alert.alert('Success', 'All data has been cleared.');
           },

@@ -1,7 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Note, ListData } from '@/types';
-import { notificationManager } from './notifications';
-import { Alert } from 'react-native';
 
 const NOTES_KEY = 'listify_notes';
 const LISTS_KEY = 'listify_lists';
@@ -57,10 +55,6 @@ export class StorageService {
       const notes = await this.getNotes();
       const noteIndex = notes.findIndex(note => note.id === id);
       if (noteIndex !== -1) {
-        const oldNote = notes[noteIndex];
-        if (oldNote.notificationId && updates.reminderDate !== oldNote.reminderDate) {
-          await notificationManager.cancelAlarm(oldNote.notificationId);
-        }
         notes[noteIndex] = { 
           ...notes[noteIndex], 
           ...updates, 
@@ -76,10 +70,6 @@ export class StorageService {
   static async deleteNote(id: string): Promise<void> {
     try {
       const notes = await this.getNotes();
-      const noteToDelete = notes.find(note => note.id === id);
-      if (noteToDelete?.notificationId) {
-        await notificationManager.cancelAlarm(noteToDelete.notificationId);
-      }
       const filteredNotes = notes.filter(note => note.id !== id);
       await this.saveNotes(filteredNotes);
     } catch (error) {
@@ -87,59 +77,17 @@ export class StorageService {
     }
   }
 
-  static async setNoteReminder(
-    noteId: string,
-    reminderDateTime: Date
-  ): Promise<void> {
+  static async setNoteReminder(noteId: string, reminderDateTime: Date): Promise<void> {
     try {
-      console.log('--- StorageService: setNoteReminder triggered ---');
-      console.log(`Received noteId: ${noteId}`);
-      console.log(`Received reminderDateTime: ${reminderDateTime.toISOString()}`);
-
-      const notes = await this.getNotes();
-      const note = notes.find(n => n.id === noteId);
-
-      if (!note) {
-        console.error('Note not found in storage!');
-        return;
-      }
-
-      if (note.notificationId) {
-        console.log(`Cancelling existing alarm: ${note.notificationId}`);
-        await notificationManager.cancelAlarm(note.notificationId);
-      }
-
-      const fireAt = new Date(reminderDateTime);
-      console.log(`Created 'fireAt' Date object: ${fireAt.toISOString()}`);
-      
-      const now = new Date();
-      if (fireAt <= now) {
-        console.error(`CRITICAL: Time is in the past! fireAt: ${fireAt.toISOString()}, now: ${now.toISOString()}`);
-        return;
-      }
-
-      console.log('Calling NotificationService.scheduleAlarm...');
-      const alarmId = await notificationManager.scheduleAlarm(
-        'Listify Reminder',
-        note.text,
-        fireAt
-      );
-      
-      console.log(`Received alarmId from service: ${alarmId}`);
-
       await this.updateNote(noteId, {
-        reminderDate: fireAt,
-        notificationId: alarmId || undefined,
+        reminderDate: reminderDateTime,
+        reminderExpired: false,
       });
-      console.log('Note updated in storage with new reminder info.');
-
     } catch (error) {
-      console.error('Error in setNoteReminder:', error);
+      console.error('Error setting reminder:', error);
     }
-    console.log('StorageService: setNoteReminder finished');
   }
 
-  // ... other functions like getLists, saveLists etc. remain the same
   static async getLists(): Promise<ListData[]> {
     try {
       const listsJson = await AsyncStorage.getItem(LISTS_KEY);
@@ -215,6 +163,32 @@ export class StorageService {
         .slice(0, limit);
     } catch (error) {
       console.error('Error getting recent notes:', error);
+      return [];
+    }
+  }
+
+  static async getActionNeededNotes(): Promise<Note[]> {
+    try {
+      const notes = await this.getNotes();
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+
+      return notes.filter(note => {
+        if (!note.reminderDate || note.completed) return false;
+        
+        const reminderDate = new Date(note.reminderDate);
+        
+        // Include expired reminders (red ones)
+        if (reminderDate < now && note.reminderExpired) {
+          return true;
+        }
+        
+        // Include reminders that expire today
+        return reminderDate >= today && reminderDate < tomorrow;
+      });
+    } catch (error) {
+      console.error('Error getting action needed notes:', error);
       return [];
     }
   }

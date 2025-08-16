@@ -6,7 +6,7 @@ export interface Note {
   createdAt: Date;
   updatedAt: Date;
   reminderDate?: Date;
-  notificationId?: string;
+  reminderExpired?: boolean;
 }
 
 export interface ListData {

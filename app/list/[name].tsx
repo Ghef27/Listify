@@ -91,21 +91,17 @@ export default function ListScreen() {
     setShowReminderModal(true);
   };
 
-  // ✅ Updated handleSaveReminder
   const handleSaveReminder = async (reminderDate: Date) => {
     if (!selectedNoteForReminder) return;
 
     try {
-      // Pass the combined date/time directly
       await StorageService.setNoteReminder(
         selectedNoteForReminder.id,
         reminderDate
       );
 
-      // Refresh notes and reset selection
       await loadNotes();
       setSelectedNoteForReminder(null);
-
     } catch (error) {
       console.error('Error saving reminder:', error);
     }
