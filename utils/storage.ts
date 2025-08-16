@@ -59,7 +59,7 @@ export class StorageService {
       if (noteIndex !== -1) {
         const oldNote = notes[noteIndex];
         if (oldNote.notificationId && updates.reminderDate !== oldNote.reminderDate) {
-          await notificationManager.cancelNotification(oldNote.notificationId);
+          notificationManager.cancelAlarm(oldNote.notificationId);
         }
         notes[noteIndex] = { 
           ...notes[noteIndex], 
@@ -78,7 +78,7 @@ export class StorageService {
       const notes = await this.getNotes();
       const noteToDelete = notes.find(note => note.id === id);
       if (noteToDelete?.notificationId) {
-        notificationManager.cancelNotification(noteToDelete.notificationId);
+        notificationManager.cancelAlarm(noteToDelete.notificationId);
       }
       const filteredNotes = notes.filter(note => note.id !== id);
       await this.saveNotes(filteredNotes);
@@ -106,8 +106,8 @@ export class StorageService {
       }
 
       if (note.notificationId) {
-        console.log(`[7] Cancelling existing notification: ${note.notificationId}`);
-        notificationManager.cancelNotification(note.notificationId);
+        console.log(`[7] Cancelling existing alarm: ${note.notificationId}`);
+        notificationManager.cancelAlarm(note.notificationId);
       }
 
       const fireAt = new Date(reminderDateTime);
@@ -119,18 +119,18 @@ export class StorageService {
         return;
       }
 
-      console.log('[9] Calling NotificationService.scheduleNotification...');
-      const notificationId = notificationManager.scheduleNotification(
+      console.log('[9] Calling NotificationService.scheduleAlarm...');
+      const alarmId = notificationManager.scheduleAlarm(
         'Listify Reminder',
         note.text,
         fireAt
       );
       
-      console.log(`[12] Received notificationId from service: ${notificationId}`);
+      console.log(`[12] Received alarmId from service: ${alarmId}`);
 
       await this.updateNote(noteId, {
         reminderDate: fireAt,
-        notificationId: notificationId || undefined,
+        notificationId: alarmId || undefined,
       });
       console.log('[13] Note updated in storage with new reminder info.');
 
