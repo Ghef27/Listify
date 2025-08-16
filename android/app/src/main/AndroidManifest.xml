@@ -30,18 +30,37 @@
     android:theme="@style/AppTheme" 
     android:supportsRtl="true">
 
-    <!-- THIS SERVICE TAG WAS MISSING AND IS THE FIX -->
+    <!-- Add these lines for react-native-push-notification -->
+    <meta-data  android:name="com.dieam.reactnativepushnotification.notification_channel_name"
+                android:value="Listify Channel"/>
+    <meta-data  android:name="com.dieam.reactnativepushnotification.notification_channel_description"
+                android:value="A channel for all Listify notifications"/>
+    <meta-data  android:name="com.dieam.reactnativepushnotification.notification_color"
+                android:resource="@android:color/white"/>
+
+    <receiver android:name="com.dieam.reactnativepushnotification.modules.RNPushNotificationActions" />
+    <receiver android:name="com.dieam.reactnativepushnotification.modules.RNPushNotificationPublisher" />
+    <receiver android:name="com.dieam.reactnativepushnotification.modules.RNPushNotificationBootEventReceiver" android:exported="false">
+        <intent-filter>
+            <action android:name="android.intent.action.BOOT_COMPLETED" />
+            <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+        </intent-filter>
+    </receiver>
+    
     <service
-      android:name="com.dieam.reactnativepushnotification.modules.RNPushNotificationListenerService"
-      android:exported="false">
-      <intent-filter>
-        <action android:name="com.google.firebase.MESSAGING_EVENT"/>
-      </intent-filter>
+        android:name="com.dieam.reactnativepushnotification.modules.RNPushNotificationListenerService"
+        android:exported="false" >
+        <intent-filter>
+            <action android:name="com.google.firebase.MESSAGING_EVENT" />
+        </intent-filter>
     </service>
+    <!-- End of lines for react-native-push-notification -->
 
     <meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>
+    
     <activity 
       android:name=".MainActivity" 
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode" 
