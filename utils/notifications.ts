@@ -83,7 +83,7 @@ class AlarmService {
       } else {
         // Mobile implementation
         try {
-          const { default: * as Notifications } = await import('expo-notifications');
+          const Notifications = await import('expo-notifications');
           
           const notificationId = await Notifications.scheduleNotificationAsync({
             content: {
