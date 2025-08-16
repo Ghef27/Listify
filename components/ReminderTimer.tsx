@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Clock, AlertTriangle } from 'lucide-react-native';
+import { Clock, TriangleAlert as AlertTriangle } from 'lucide-react-native';
 
 interface ReminderTimerProps {
   reminderDate: Date;
