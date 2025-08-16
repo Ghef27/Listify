@@ -60,7 +60,7 @@ export function ReminderTimer({ reminderDate, isExpired = false, onExpire }: Rem
   return (
     <View style={styles.container}>
       <Clock size={14} color="#14B8A6" />
-      <Text style={styles.timeText}>Time left: {timeLeft}</Text>
+      <Text style={styles.timeText}>Remaining: {timeLeft}</Text>
     </View>
   );
 }
@@ -71,10 +71,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#f9f9f9ff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: '#F0FDF4',
   },
   timeText: {
     fontSize: 12,
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: '#FEF2F2',
   },
   expiredText: {
     fontSize: 12,
