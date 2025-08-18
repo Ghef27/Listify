@@ -13,6 +13,7 @@ import {
 import { X, Mic, MicOff, Send } from 'lucide-react-native';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { ListData } from '@/types';
+import { StorageService } from '@/utils/storage';
 
 interface AddNoteModalProps {
   visible: boolean;
