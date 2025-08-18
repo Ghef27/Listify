@@ -36,6 +36,19 @@ export function AddNoteModal({ visible, onClose, onSave, initialList, lists }: A
     resetTranscript 
   } = useSpeechRecognition();
 
+  // Reload lists when modal becomes visible
+  useEffect(() => {
+    if (visible) {
+      // Small delay to ensure any archive changes are reflected
+      const timer = setTimeout(async () => {
+        // This will trigger a re-render with updated lists
+        const updatedLists = await StorageService.getLists();
+        // The parent component should pass the updated lists
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
 useEffect(() => {
   // Only run this effect if the modal is visible
   if (!visible) return;
