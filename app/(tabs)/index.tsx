@@ -205,7 +205,7 @@ export default function HomeScreen() {
               <Text style={styles.sectionTitle}>Action Needed</Text>
             </View>
             {actionNeededNotes.map((note) => (
-              <View key={note.id} style={styles.actionNeededItem}>
+              <View key={note.id}>
                 <NoteItem
                   note={note}
                   onToggleComplete={handleToggleComplete}
@@ -400,12 +400,6 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 22,
-  },
-  actionNeededItem: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 8,
-    overflow: 'hidden',
   },
   timerContainer: {
     paddingHorizontal: 16,
