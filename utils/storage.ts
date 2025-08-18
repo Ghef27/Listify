@@ -157,14 +157,18 @@ export class StorageService {
 
   static async toggleListArchive(listName: string): Promise<void> {
     try {
+     console.log('toggleListArchive called for:', listName);
       const lists = await this.getLists();
+     console.log('Current lists:', lists.map(l => ({ name: l.name, archived: l.archived })));
       const listIndex = lists.findIndex(list => list.name === listName);
       if (listIndex !== -1) {
         lists[listIndex] = { 
           ...lists[listIndex], 
           archived: !lists[listIndex].archived 
         };
+       console.log('Updated list:', lists[listIndex]);
         await this.saveLists(lists);
+       console.log('Lists saved successfully');
       }
     } catch (error) {
       console.error('Error toggling list archive:', error);

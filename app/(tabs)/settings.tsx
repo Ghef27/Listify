@@ -80,6 +80,7 @@ export default function SettingsScreen() {
   };
 
   const handleToggleArchive = async (listName: string, isArchived: boolean) => {
+   console.log('Archive button pressed for:', listName, 'Currently archived:', isArchived);
     const action = isArchived ? 'unarchive' : 'archive';
     const actionTitle = isArchived ? 'Unarchive List' : 'Archive List';
     const actionMessage = isArchived 
@@ -94,7 +95,9 @@ export default function SettingsScreen() {
         {
           text: isArchived ? 'Unarchive' : 'Archive',
           onPress: async () => {
+           console.log('User confirmed archive action for:', listName);
             await StorageService.toggleListArchive(listName);
+           console.log('Archive action completed, reloading lists...');
             await loadLists();
           },
         },
@@ -156,6 +159,7 @@ export default function SettingsScreen() {
               <TouchableOpacity 
                 style={styles.archiveButton}
                 onPress={() => handleToggleArchive(list.name, list.archived || false)}
+               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 {list.archived ? (
                   <ArchiveRestore size={18} color="#14B8A6" />
@@ -328,6 +332,7 @@ const styles = StyleSheet.create({
   },
   archiveButton: {
     padding: 8,
+   backgroundColor: 'transparent',
   },
   infoCard: {
     backgroundColor: '#F0FDFA',
