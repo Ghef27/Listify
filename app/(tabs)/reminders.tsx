@@ -150,10 +150,7 @@ export default function RemindersScreen() {
           </View>
         ) : (
           notesWithReminders.map((note) => (
-            <View key={note.id} style={[
-              styles.reminderItem,
-              (note.reminderDate && new Date(note.reminderDate) < new Date()) && styles.reminderItemExpired
-            ]}>
+            <View key={note.id} style={styles.reminderItem}>
               <View style={styles.reminderHeader}>
                 <View style={styles.reminderTimeContainer}>
                   <Clock size={16} color={isReminderPast(new Date(note.reminderDate!)) ? "#EF4444" : "#14B8A6"} />
@@ -231,9 +228,6 @@ const styles = StyleSheet.create({
   },
   reminderItem: {
     marginVertical: 4,
-  },
-  reminderItemExpired: {
-    // Remove the outer red styling - now handled in NoteItem
   },
   reminderHeader: {
     flexDirection: 'row',

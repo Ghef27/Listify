@@ -205,10 +205,7 @@ export default function HomeScreen() {
               <Text style={styles.sectionTitle}>Action Needed</Text>
             </View>
             {actionNeededNotes.map((note) => (
-              <View key={note.id} style={[
-                styles.actionNeededItem,
-                note.reminderExpired && styles.actionNeededItemExpired
-              ]}>
+              <View key={note.id} style={styles.actionNeededItem}>
                 <NoteItem
                   note={note}
                   onToggleComplete={handleToggleComplete}
@@ -409,11 +406,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
     overflow: 'hidden',
-  },
-  actionNeededItemExpired: {
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
   },
   timerContainer: {
     paddingHorizontal: 16,
