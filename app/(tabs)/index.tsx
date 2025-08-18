@@ -33,6 +33,7 @@ const SUBTITLE_FONT = 'Inter-Regular';  // Options: 'Inter-Regular', 'Poppins-Re
 
 // Style configuration - easily modify colors, sizes, and spacing
 const TITLE_COLOR = '#1F2937';          // Title color (dark gray by default)
+const TITLE_ALIGNMENT = 'center';          // Title color (dark gray by default)
 const SUBTITLE_COLOR = '#6B7280';       // Subtitle color (medium gray by default)
 const TITLE_SIZE = 32;                  // Title font size
 const SUBTITLE_SIZE = 16;               // Subtitle font size
@@ -300,6 +301,7 @@ const styles = StyleSheet.create({
   // Title styling - font family, color, and size are now configurable above
   title: {
     fontWeight: 'bold',
+    textAlign: TITLE_ALIGNMENT, // Use the new variable here  
     // fontSize, color, and fontFamily are applied inline for easy customization
   },
   // Subtitle styling - font family, color, and size are now configurable above
