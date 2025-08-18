@@ -13,6 +13,7 @@ export interface ListData {
   name: string;
   count: number;
   color: string;
+  archived?: boolean;
 }
 
 export const DEFAULT_LISTS: ListData[] = [

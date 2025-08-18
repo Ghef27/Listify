@@ -18,7 +18,9 @@ import {
   Info,
   Plus,
   X,
-  Save
+  Save,
+  Archive,
+  ArchiveRestore
 } from 'lucide-react-native';
 import { StorageService } from '@/utils/storage';
 import { ListData } from '@/types';
@@ -36,7 +38,13 @@ export default function SettingsScreen() {
 
   const loadLists = useCallback(async () => {
     const listsData = await StorageService.getLists();
-    setLists(listsData);
+    // Sort lists: active first, then archived
+    const sortedLists = listsData.sort((a, b) => {
+      if (a.archived && !b.archived) return 1;
+      if (!a.archived && b.archived) return -1;
+      return 0;
+    });
+    setLists(sortedLists);
   }, []);
 
   useEffect(() => {
@@ -71,6 +79,28 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleToggleArchive = async (listName: string, isArchived: boolean) => {
+    const action = isArchived ? 'unarchive' : 'archive';
+    const actionTitle = isArchived ? 'Unarchive List' : 'Archive List';
+    const actionMessage = isArchived 
+      ? 'This will make the list and its notes visible again.'
+      : 'This will hide the list and its notes from the main view. You can unarchive it later from settings.';
+    
+    Alert.alert(
+      actionTitle,
+      actionMessage,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: isArchived ? 'Unarchive' : 'Archive',
+          onPress: async () => {
+            await StorageService.toggleListArchive(listName);
+            await loadLists();
+          },
+        },
+      ]
+    );
+  };
   const handleTestSpeech = () => {
     Alert.alert(
       'Speech Recognition',
@@ -110,11 +140,29 @@ export default function SettingsScreen() {
           </View>
           
           {lists.map((list) => (
-            <View key={list.name} style={styles.settingItem}>
+            <View key={list.name} style={[
+              styles.settingItem,
+              list.archived && styles.settingItemArchived
+            ]}>
               <View style={styles.settingLeft}>
                 <View style={[styles.colorDot, { backgroundColor: list.color }]} />
-                <Text style={styles.settingText}>{list.name}</Text>
+                <Text style={[
+                  styles.settingText,
+                  list.archived && styles.settingTextArchived
+                ]}>
+                  {list.name}
+                </Text>
               </View>
+              <TouchableOpacity 
+                style={styles.archiveButton}
+                onPress={() => handleToggleArchive(list.name, list.archived || false)}
+              >
+                {list.archived ? (
+                  <ArchiveRestore size={18} color="#14B8A6" />
+                ) : (
+                  <Archive size={18} color="#6B7280" />
+                )}
+              </TouchableOpacity>
             </View>
           ))}
         </View>
@@ -250,6 +298,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  settingItemArchived: {
+    backgroundColor: '#F3F4F6',
+  },
   settingLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -259,6 +310,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1F2937',
     marginLeft: 12,
+  },
+  settingTextArchived: {
+    fontStyle: 'italic',
+    color: '#6B7280',
   },
   settingSubtext: {
     fontSize: 14,
@@ -270,6 +325,9 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     marginRight: 12,
+  },
+  archiveButton: {
+    padding: 8,
   },
   infoCard: {
     backgroundColor: '#F0FDFA',

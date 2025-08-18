@@ -67,8 +67,11 @@ export default function HomeScreen() {
       StorageService.getActionNeededNotes()
     ]);
     
+    // Filter out archived lists
+    const activeListsData = listsData.filter(list => !list.archived);
+    
     // Calculate note counts for each list
-    const listsWithCounts = listsData.map(list => ({
+    const listsWithCounts = activeListsData.map(list => ({
       ...list,
       count: notes.filter(note => note.listName === list.name && !note.completed).length
     }));

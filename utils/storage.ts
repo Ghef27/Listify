@@ -137,7 +137,7 @@ export class StorageService {
       // Update the list
       const listIndex = lists.findIndex(list => list.name === oldName);
       if (listIndex !== -1) {
-        lists[listIndex] = { name: newName, color };
+        lists[listIndex] = { ...lists[listIndex], name: newName, color };
         await this.saveLists(lists);
       }
       
@@ -155,10 +155,31 @@ export class StorageService {
     }
   }
 
+  static async toggleListArchive(listName: string): Promise<void> {
+    try {
+      const lists = await this.getLists();
+      const listIndex = lists.findIndex(list => list.name === listName);
+      if (listIndex !== -1) {
+        lists[listIndex] = { 
+          ...lists[listIndex], 
+          archived: !lists[listIndex].archived 
+        };
+        await this.saveLists(lists);
+      }
+    } catch (error) {
+      console.error('Error toggling list archive:', error);
+    }
+  }
   static async getRecentNotes(limit: number = 5): Promise<Note[]> {
     try {
       const notes = await this.getNotes();
+      const lists = await this.getLists();
+      const archivedListNames = lists
+        .filter(list => list.archived)
+        .map(list => list.name);
+      
       return notes
+        .filter(note => !archivedListNames.includes(note.listName))
         .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         .slice(0, limit);
     } catch (error) {
@@ -170,12 +191,17 @@ export class StorageService {
   static async getActionNeededNotes(): Promise<Note[]> {
     try {
       const notes = await this.getNotes();
+      const lists = await this.getLists();
+      const archivedListNames = lists
+        .filter(list => list.archived)
+        .map(list => list.name);
+      
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
       return notes.filter(note => {
-        if (!note.reminderDate || note.completed) return false;
+        if (!note.reminderDate || note.completed || archivedListNames.includes(note.listName)) return false;
         
         const reminderDate = new Date(note.reminderDate);
         

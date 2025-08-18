@@ -110,7 +110,7 @@ useEffect(() => {
   showsHorizontalScrollIndicator={false} 
   style={styles.listsContainer}
 >
-            {lists.map((list) => (
+            {lists.filter(list => !list.archived).map((list) => (
 <TouchableOpacity
   key={list.name}
   onLayout={(event) => {
