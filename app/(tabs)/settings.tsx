@@ -28,6 +28,8 @@ import { ListData } from '@/types';
 export default function SettingsScreen() {
   const [lists, setLists] = useState<ListData[]>([]);
   const [showAddListModal, setShowAddListModal] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [selectedListForArchive, setSelectedListForArchive] = useState<{ name: string; isArchived: boolean } | null>(null);
   const [newListName, setNewListName] = useState('');
   const [newListColor, setNewListColor] = useState('#14B8A6');
 
@@ -81,29 +83,22 @@ export default function SettingsScreen() {
 
   const handleToggleArchive = async (listName: string, isArchived: boolean) => {
    console.log('Archive button pressed for:', listName, 'Currently archived:', isArchived);
-    const action = isArchived ? 'unarchive' : 'archive';
-    const actionTitle = isArchived ? 'Unarchive List' : 'Archive List';
-    const actionMessage = isArchived 
-      ? 'This will make the list and its notes visible again.'
-      : 'This will hide the list and its notes from the main view. You can unarchive it later from settings.';
-    
-    Alert.alert(
-      actionTitle,
-      actionMessage,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: isArchived ? 'Unarchive' : 'Archive',
-          onPress: async () => {
-           console.log('User confirmed archive action for:', listName);
-            await StorageService.toggleListArchive(listName);
-           console.log('Archive action completed, reloading lists...');
-            await loadLists();
-          },
-        },
-      ]
-    );
+    setSelectedListForArchive({ name: listName, isArchived });
+    setShowArchiveModal(true);
   };
+
+  const confirmArchiveAction = async () => {
+    if (!selectedListForArchive) return;
+    
+    console.log('User confirmed archive action for:', selectedListForArchive.name);
+    await StorageService.toggleListArchive(selectedListForArchive.name);
+    console.log('Archive action completed, reloading lists...');
+    await loadLists();
+    
+    setShowArchiveModal(false);
+    setSelectedListForArchive(null);
+  };
+
   const handleTestSpeech = () => {
     Alert.alert(
       'Speech Recognition',
@@ -243,6 +238,61 @@ export default function SettingsScreen() {
                   onPress={() => setNewListColor(color)}
                 />
               ))}
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      <Modal visible={showArchiveModal} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => {
+              setShowArchiveModal(false);
+              setSelectedListForArchive(null);
+            }}>
+              <X size={24} color="#1F2937" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>
+              {selectedListForArchive?.isArchived ? 'Unarchive List' : 'Archive List'}
+            </Text>
+            <View style={styles.headerSpacer} />
+          </View>
+
+          <View style={styles.modalContent}>
+            <View style={styles.confirmationCard}>
+              <Text style={styles.confirmationTitle}>
+                {selectedListForArchive?.isArchived ? 'Unarchive' : 'Archive'} "{selectedListForArchive?.name}"?
+              </Text>
+              <Text style={styles.confirmationMessage}>
+                {selectedListForArchive?.isArchived 
+                  ? 'This will make the list and its notes visible again in the main view.'
+                  : 'This will hide the list and its notes from the main view. You can unarchive it later from settings.'
+                }
+              </Text>
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => {
+                  setShowArchiveModal(false);
+                  setSelectedListForArchive(null);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.confirmButton,
+                  selectedListForArchive?.isArchived ? styles.unarchiveButton : styles.archiveButton
+                ]}
+                onPress={confirmArchiveAction}
+              >
+                <Text style={styles.confirmButtonText}>
+                  {selectedListForArchive?.isArchived ? 'Unarchive' : 'Archive'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </SafeAreaView>
@@ -403,5 +453,62 @@ const styles = StyleSheet.create({
   },
   colorOptionSelected: {
     borderColor: '#1F2937',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  confirmationCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  confirmationTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  confirmationMessage: {
+    fontSize: 16,
+    color: '#6B7280',
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  confirmButton: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  archiveButton: {
+    backgroundColor: '#F59E0B',
+  },
+  unarchiveButton: {
+    backgroundColor: '#14B8A6',
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
 });
