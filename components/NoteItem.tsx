@@ -22,9 +22,15 @@ export function NoteItem({
   showDeleteButton = false,
   showReminderButton = false 
 }: NoteItemProps) {
+  const isExpired = note.reminderDate && new Date(note.reminderDate) < new Date();
+  
   return (
     <TouchableOpacity 
-      style={[styles.container, note.completed && styles.containerCompleted]} 
+      style={[
+        styles.container, 
+        note.completed && styles.containerCompleted,
+        isExpired && styles.containerExpired
+      ]} 
       onPress={() => onPress?.(note)}
       activeOpacity={0.7}
     >
@@ -43,7 +49,12 @@ export function NoteItem({
         ]}>
           {note.text}
         </Text>
-        <Text style={styles.listName}>{note.listName}</Text>
+        <View style={styles.listNameContainer}>
+          <Text style={styles.listName}>{note.listName}</Text>
+          {note.reminderDate && new Date(note.reminderDate) < new Date() && (
+            <Text style={styles.expiredText}>! Expired</Text>
+          )}
+        </View>
       </View>
       
       <View style={styles.actionButtons}>
@@ -87,7 +98,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   containerCompleted: {
-    backgroundColor: '#a5f2e9',
+    backgroundColor: '#F3F4F6',
+  },
+  containerExpired: {
+    backgroundColor: '#FEF2F2',
   },
   checkbox: {
     width: 24,
@@ -118,7 +132,17 @@ const styles = StyleSheet.create({
   listName: {
     fontSize: 12,
     color: '#6B7280',
+  },
+  listNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 2,
+    gap: 8,
+  },
+  expiredText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#EF4444',
   },
   actionButtons: {
     flexDirection: 'row',
