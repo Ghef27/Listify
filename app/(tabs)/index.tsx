@@ -70,9 +70,6 @@ export default function HomeScreen() {
     // Filter out archived lists
     const activeListsData = listsData.filter(list => !list.archived);
     
-    // Filter out archived lists
-    const activeListsData = listsData.filter(list => !list.archived);
-    
     // Calculate note counts for each list
     const listsWithCounts = activeListsData.map(list => ({
       ...list,
