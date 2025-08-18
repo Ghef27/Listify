@@ -88,6 +88,25 @@ export default function HomeScreen() {
     loadData();
   }, [loadData]);
 
+  // Refresh data when screen comes into focus (e.g., returning from settings)
+  useEffect(() => {
+    const focusHandler = () => {
+      loadData();
+    };
+    
+    // Listen for focus events
+    const unsubscribe = router.addListener?.('focus', focusHandler);
+    return unsubscribe;
+  }, [router, loadData]);
+
+  // Add focus listener to refresh data when screen becomes active
+  useEffect(() => {
+    const unsubscribe = router.addListener?.('focus', () => {
+      loadData();
+    });
+    return unsubscribe;
+  }, [router, loadData]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadData();
