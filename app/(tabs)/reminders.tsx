@@ -21,18 +21,9 @@ export default function RemindersScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadNotesWithReminders = useCallback(async () => {
-    const [allNotes, lists] = await Promise.all([
-      StorageService.getNotes(),
-      StorageService.getLists()
-    ]);
-    
-    // Filter out notes from archived lists
-    const archivedListNames = lists
-      .filter(list => list.archived)
-      .map(list => list.name);
-    
-    const activeNotes = allNotes.filter(note => !archivedListNames.includes(note.listName));
-    const reminders = activeNotes.filter(note => note.reminderDate);
+    const allNotes = await StorageService.getNotes();
+    // Show all reminders, including from archived lists
+    const reminders = allNotes.filter(note => note.reminderDate);
     
     // Sort by reminder date (earliest first)
     const sortedReminders = reminders.sort((a, b) => {

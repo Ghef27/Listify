@@ -192,20 +192,27 @@ export class StorageService {
     }
   }
 
+  static async getRecentNotesIncludingArchived(limit: number = 5): Promise<Note[]> {
+    try {
+      const notes = await this.getNotes();
+      return notes
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, limit);
+    } catch (error) {
+      console.error('Error getting recent notes including archived:', error);
+      return [];
+    }
+  }
   static async getActionNeededNotes(): Promise<Note[]> {
     try {
       const notes = await this.getNotes();
-      const lists = await this.getLists();
-      const archivedListNames = lists
-        .filter(list => list.archived)
-        .map(list => list.name);
       
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
       return notes.filter(note => {
-        if (!note.reminderDate || note.completed || archivedListNames.includes(note.listName)) return false;
+        if (!note.reminderDate || note.completed) return false;
         
         const reminderDate = new Date(note.reminderDate);
         

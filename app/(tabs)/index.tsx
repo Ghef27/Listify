@@ -80,7 +80,7 @@ export default function HomeScreen() {
     setActionNeededNotes(actionNotes);
     
     // Get recent notes (last 5)
-    const recent = await StorageService.getRecentNotes(5);
+    const recent = await StorageService.getRecentNotesIncludingArchived(5);
     setRecentNotes(recent);
   }, []);
 

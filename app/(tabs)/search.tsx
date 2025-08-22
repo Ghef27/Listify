@@ -22,18 +22,9 @@ export default function SearchScreen() {
   const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
 
   const loadNotes = useCallback(async () => {
-    const [notes, lists] = await Promise.all([
-      StorageService.getNotes(),
-      StorageService.getLists()
-    ]);
-    
-    // Filter out notes from archived lists
-    const archivedListNames = lists
-      .filter(list => list.archived)
-      .map(list => list.name);
-    
-    const activeNotes = notes.filter(note => !archivedListNames.includes(note.listName));
-    setAllNotes(activeNotes);
+    const notes = await StorageService.getNotes();
+    // Show all notes in search, including from archived lists
+    setAllNotes(notes);
   }, []);
 
   useEffect(() => {
