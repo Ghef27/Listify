@@ -12,20 +12,38 @@ import {
   Alert,
   Image,
 } from 'react-native';
+import { useEffect } from 'react';
 import { X, Camera, Calendar } from 'lucide-react-native';
+import { Note } from '@/types';
 
 interface AddBirthdayModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (name: string, month: number, day: number, image?: string) => void;
+  editingBirthday?: Note | null;
 }
 
-export function AddBirthdayModal({ visible, onClose, onSave }: AddBirthdayModalProps) {
+export function AddBirthdayModal({ visible, onClose, onSave, editingBirthday }: AddBirthdayModalProps) {
   const [name, setName] = useState('');
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+  // Populate fields when editing
+  useEffect(() => {
+    if (editingBirthday && visible) {
+      setName(editingBirthday.text);
+      setSelectedMonth(editingBirthday.birthdayMonth || null);
+      setSelectedDay(editingBirthday.birthdayDay || null);
+      setSelectedImage(editingBirthday.birthdayImage || null);
+    } else if (!editingBirthday && visible) {
+      // Reset for new birthday
+      setName('');
+      setSelectedMonth(null);
+      setSelectedDay(null);
+      setSelectedImage(null);
+    }
+  }, [editingBirthday, visible]);
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
@@ -54,16 +72,30 @@ export function AddBirthdayModal({ visible, onClose, onSave }: AddBirthdayModalP
   };
 
   const handleImageUpload = () => {
-    // For now, we'll simulate image selection
-    // In a real app, you would use expo-image-picker
+    const sampleImages = [
+      'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&dpr=1',
+      'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&dpr=1',
+      'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&dpr=1',
+      'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&dpr=1',
+      'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&dpr=1'
+    ];
+    
     Alert.alert(
-      'Image Upload',
-      'Image upload functionality would be implemented here using expo-image-picker.',
+      'Select Photo',
+      'Choose a sample photo or remove current photo',
       [
         { text: 'Cancel' },
+        ...(selectedImage ? [{ 
+          text: 'Remove Photo', 
+          style: 'destructive' as const,
+          onPress: () => setSelectedImage(null)
+        }] : []),
         { 
-          text: 'Use Sample', 
-          onPress: () => setSelectedImage('https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&dpr=1')
+          text: 'Random Sample', 
+          onPress: () => {
+            const randomImage = sampleImages[Math.floor(Math.random() * sampleImages.length)];
+            setSelectedImage(randomImage);
+          }
         }
       ]
     );
@@ -79,14 +111,16 @@ export function AddBirthdayModal({ visible, onClose, onSave }: AddBirthdayModalP
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <X size={24} color="#1F2937" />
           </TouchableOpacity>
-          <Text style={styles.title}>Add Birthday</Text>
+          <Text style={styles.title}>
+            {editingBirthday ? 'Edit Birthday' : 'Add Birthday'}
+          </Text>
           <TouchableOpacity 
             onPress={handleSave}
             style={[styles.saveButton, (!name.trim() || !selectedMonth || !selectedDay) && styles.saveButtonDisabled]}
             disabled={!name.trim() || !selectedMonth || !selectedDay}
           >
             <Text style={[styles.saveButtonText, (!name.trim() || !selectedMonth || !selectedDay) && styles.saveButtonTextDisabled]}>
-              Save
+              {editingBirthday ? 'Update' : 'Save'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -111,7 +145,9 @@ export function AddBirthdayModal({ visible, onClose, onSave }: AddBirthdayModalP
               ) : (
                 <>
                   <Camera size={32} color="#6B7280" />
-                  <Text style={styles.imageUploadText}>Tap to add photo</Text>
+                  <Text style={styles.imageUploadText}>
+                    {selectedImage ? 'Tap to change photo' : 'Tap to add photo'}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>

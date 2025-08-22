@@ -10,6 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Clock, CircleAlert as AlertCircle } from 'lucide-react-native';
+import { Cake } from 'lucide-react-native';
+import { Image } from 'react-native';
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { Poppins_400Regular, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import { StorageService } from '@/utils/storage';
@@ -45,6 +47,7 @@ export default function HomeScreen() {
   const [lists, setLists] = useState<ListData[]>([]);
   const [recentNotes, setRecentNotes] = useState<Note[]>([]);
   const [actionNeededNotes, setActionNeededNotes] = useState<Note[]>([]);
+  const [thisMonthBirthdays, setThisMonthBirthdays] = useState<Note[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
@@ -61,10 +64,11 @@ export default function HomeScreen() {
   });
 
   const loadData = useCallback(async () => {
-    const [listsData, notes, actionNotes] = await Promise.all([
+    const [listsData, notes, actionNotes, allNotes] = await Promise.all([
       StorageService.getLists(),
       StorageService.getNotes(),
-      StorageService.getActionNeededNotes()
+      StorageService.getActionNeededNotes(),
+      StorageService.getNotes()
     ]);
     
     // Filter out archived lists
@@ -78,6 +82,14 @@ export default function HomeScreen() {
     
     setLists(listsWithCounts);
     setActionNeededNotes(actionNotes);
+    
+    // Get this month's birthdays
+    const currentMonth = new Date().getMonth() + 1;
+    const birthdayNotes = allNotes.filter(note => 
+      note.listName === 'Birthdays' && 
+      note.birthdayMonth === currentMonth
+    );
+    setThisMonthBirthdays(birthdayNotes);
     
     // Get recent notes (last 5)
     const recent = await StorageService.getRecentNotesIncludingArchived(5);
@@ -227,6 +239,68 @@ export default function HomeScreen() {
                 )}
               </View>
             ))}
+          </View>
+        )}
+
+        {thisMonthBirthdays.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Cake size={20} color="#EC4899" />
+              <Text style={styles.sectionTitle}>This Month's Birthdays</Text>
+            </View>
+            {thisMonthBirthdays.map((birthday) => {
+              const daysUntil = birthday.birthdayMonth && birthday.birthdayDay ? 
+                (() => {
+                  const today = new Date();
+                  const currentYear = today.getFullYear();
+                  let birthdayDate = new Date(currentYear, birthday.birthdayMonth - 1, birthday.birthdayDay);
+                  
+                  if (birthdayDate < today) {
+                    birthdayDate = new Date(currentYear + 1, birthday.birthdayMonth - 1, birthday.birthdayDay);
+                  }
+                  
+                  return Math.ceil((birthdayDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                })() : 0;
+              
+              return (
+                <TouchableOpacity
+                  key={birthday.id}
+                  style={styles.birthdayCard}
+                  onPress={() => router.push('/birthdays')}
+                  activeOpacity={0.7}
+                >
+                  {birthday.birthdayImage ? (
+                    <Image 
+                      source={{ uri: birthday.birthdayImage }} 
+                      style={styles.birthdayImage}
+                    />
+                  ) : (
+                    <View style={styles.birthdayImagePlaceholder}>
+                      <Cake size={20} color="#EC4899" />
+                    </View>
+                  )}
+                  
+                  <View style={styles.birthdayInfo}>
+                    <Text style={styles.birthdayName}>{birthday.text}</Text>
+                    <Text style={styles.birthdayDate}>
+                      {birthday.birthdayMonth && birthday.birthdayDay && 
+                        new Date(2000, birthday.birthdayMonth - 1, birthday.birthdayDay)
+                          .toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+                      }
+                    </Text>
+                    <Text style={styles.birthdayDays}>
+                      {daysUntil === 0 ? '🎉 Today!' : 
+                       daysUntil === 1 ? '🎂 Tomorrow' : 
+                       `🗓️ ${daysUntil} days`}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.birthdayBadge}>
+                    <Text style={styles.birthdayBadgeText}>Birthday</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
 
@@ -411,5 +485,68 @@ const styles = StyleSheet.create({
   timerContainer: {
     paddingHorizontal: 16,
     paddingBottom: 12,
+  },
+  birthdayCard: {
+    backgroundColor: '#FDF2F8',
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 4,
+    marginHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FBCFE8',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  birthdayImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+  },
+  birthdayImagePlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#FBCFE8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#F3E8FF',
+  },
+  birthdayInfo: {
+    flex: 1,
+  },
+  birthdayName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#BE185D',
+    marginBottom: 2,
+  },
+  birthdayDate: {
+    fontSize: 14,
+    color: '#EC4899',
+    marginBottom: 2,
+  },
+  birthdayDays: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#BE185D',
+  },
+  birthdayBadge: {
+    backgroundColor: '#EC4899',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  birthdayBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
   },
 });

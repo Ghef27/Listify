@@ -6,19 +6,43 @@ import {
   StyleSheet, 
   RefreshControl,
   Image,
-  TouchableOpacity
+  TouchableOpacity,
+  Animated
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Cake, Calendar, Plus } from 'lucide-react-native';
+import { Cake, Calendar, Plus, Edit3, Trash2 } from 'lucide-react-native';
 import { StorageService } from '@/utils/storage';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
 import { AddBirthdayModal } from '@/components/AddBirthdayModal';
 import { Note } from '@/types';
 
+// ============================================
+// CUSTOMIZABLE BIRTHDAY CARD STYLING
+// ============================================
+const BIRTHDAY_COLORS = {
+  primary: '#EC4899',           // Main pink color
+  primaryLight: '#FDF2F8',     // Light pink background
+  primaryBorder: '#FBCFE8',    // Pink border
+  secondary: '#BE185D',        // Darker pink for text
+  accent: '#F97316',           // Orange accent for highlights
+  neutral: '#6B7280',          // Gray for regular text
+  background: '#fff',          // Card background
+  shadow: '#000',              // Shadow color
+};
+
+const ANIMATION_CONFIG = {
+  pulseScale: 1.02,            // Scale factor for pulse animation
+  pulseDuration: 2000,         // Pulse animation duration in ms
+  shadowIntensity: 0.15,       // Shadow intensity for highlighted cards
+};
+// ============================================
 export default function BirthdaysScreen() {
   const [birthdays, setBirthdays] = useState<Note[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingBirthday, setEditingBirthday] = useState<Note | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [pulseAnimations, setPulseAnimations] = useState<Record<string, Animated.Value>>({});
 
   const loadBirthdays = useCallback(async () => {
     const allNotes = await StorageService.getNotes();
@@ -47,6 +71,36 @@ export default function BirthdaysScreen() {
     });
     
     setBirthdays(sortedBirthdays);
+    
+    // Initialize pulse animations for this month birthdays
+    const animations: Record<string, Animated.Value> = {};
+    const currentMonth = new Date().getMonth() + 1;
+    
+    sortedBirthdays.forEach(birthday => {
+      if (birthday.birthdayMonth === currentMonth) {
+        animations[birthday.id] = new Animated.Value(1);
+        
+        // Start pulse animation
+        const pulseAnimation = () => {
+          Animated.sequence([
+            Animated.timing(animations[birthday.id], {
+              toValue: ANIMATION_CONFIG.pulseScale,
+              duration: ANIMATION_CONFIG.pulseDuration / 2,
+              useNativeDriver: true,
+            }),
+            Animated.timing(animations[birthday.id], {
+              toValue: 1,
+              duration: ANIMATION_CONFIG.pulseDuration / 2,
+              useNativeDriver: true,
+            }),
+          ]).start(() => pulseAnimation());
+        };
+        
+        pulseAnimation();
+      }
+    });
+    
+    setPulseAnimations(animations);
   }, []);
 
   useEffect(() => {
@@ -64,6 +118,29 @@ export default function BirthdaysScreen() {
     await loadBirthdays();
   };
 
+  const handleEditBirthday = (birthday: Note) => {
+    setEditingBirthday(birthday);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateBirthday = async (name: string, month: number, day: number, image?: string) => {
+    if (!editingBirthday) return;
+    
+    await StorageService.updateNote(editingBirthday.id, {
+      text: name,
+      birthdayMonth: month,
+      birthdayDay: day,
+      birthdayImage: image,
+    });
+    
+    await loadBirthdays();
+    setEditingBirthday(null);
+  };
+
+  const handleDeleteBirthday = async (birthdayId: string) => {
+    await StorageService.deleteNote(birthdayId);
+    await loadBirthdays();
+  };
   const getUpcomingBirthdayInfo = (month: number, day: number) => {
     const today = new Date();
     const currentYear = today.getFullYear();
@@ -120,14 +197,28 @@ export default function BirthdaysScreen() {
                 birthday.birthdayDay
               );
               
+              const AnimatedCard = pulseAnimations[birthday.id] ? Animated.View : View;
+              const animationProps = pulseAnimations[birthday.id] ? {
+                style: {
+                  transform: [{ scale: pulseAnimations[birthday.id] }]
+                }
+              } : {};
+              
               return (
-                <View 
+                <AnimatedCard
                   key={birthday.id} 
+                  {...animationProps}
+                >
+                  <View
                   style={[
                     styles.birthdayCard,
-                    isThisMonth && styles.birthdayCardHighlighted
+                    isThisMonth && styles.birthdayCardHighlighted,
+                    isThisMonth && { 
+                      shadowOpacity: ANIMATION_CONFIG.shadowIntensity,
+                      elevation: 6 
+                    }
                   ]}
-                >
+                  >
                   <View style={styles.birthdayContent}>
                     {birthday.birthdayImage ? (
                       <Image 
@@ -136,7 +227,7 @@ export default function BirthdaysScreen() {
                       />
                     ) : (
                       <View style={styles.birthdayImagePlaceholder}>
-                        <Cake size={24} color="#EC4899" />
+                        <Cake size={24} color={BIRTHDAY_COLORS.primary} />
                       </View>
                     )}
                     
@@ -146,7 +237,7 @@ export default function BirthdaysScreen() {
                         {formatBirthdayDate(birthday.birthdayMonth, birthday.birthdayDay)}
                       </Text>
                       <View style={styles.daysContainer}>
-                        <Calendar size={14} color={isThisMonth ? "#EC4899" : "#6B7280"} />
+                        <Calendar size={14} color={isThisMonth ? BIRTHDAY_COLORS.primary : BIRTHDAY_COLORS.neutral} />
                         <Text style={[
                           styles.daysText,
                           isThisMonth && styles.daysTextHighlighted
@@ -157,6 +248,24 @@ export default function BirthdaysScreen() {
                         </Text>
                       </View>
                     </View>
+                    
+                    <View style={styles.actionButtons}>
+                      <TouchableOpacity 
+                        style={styles.editButton}
+                        onPress={() => handleEditBirthday(birthday)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Edit3 size={16} color={BIRTHDAY_COLORS.neutral} />
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity 
+                        style={styles.deleteButton}
+                        onPress={() => handleDeleteBirthday(birthday.id)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Trash2 size={16} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                   
                   {isThisMonth && (
@@ -164,7 +273,8 @@ export default function BirthdaysScreen() {
                       <Text style={styles.thisMonthBadgeText}>This Month</Text>
                     </View>
                   )}
-                </View>
+                  </View>
+                </AnimatedCard>
               );
             })}
           </View>
@@ -178,6 +288,16 @@ export default function BirthdaysScreen() {
         onClose={() => setShowAddModal(false)}
         onSave={handleAddBirthday}
       />
+
+      <AddBirthdayModal
+        visible={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingBirthday(null);
+        }}
+        onSave={handleUpdateBirthday}
+        editingBirthday={editingBirthday}
+      />
     </SafeAreaView>
   );
 }
@@ -190,7 +310,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: BIRTHDAY_COLORS.background,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
@@ -201,7 +321,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: BIRTHDAY_COLORS.neutral,
     marginTop: 2,
   },
   content: {
@@ -212,20 +332,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   birthdayCard: {
-    backgroundColor: '#fff',
+    backgroundColor: BIRTHDAY_COLORS.background,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: BIRTHDAY_COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   birthdayCardHighlighted: {
-    backgroundColor: '#FDF2F8',
+    backgroundColor: BIRTHDAY_COLORS.primaryLight,
     borderWidth: 2,
-    borderColor: '#EC4899',
+    borderColor: BIRTHDAY_COLORS.primary,
   },
   birthdayContent: {
     flexDirection: 'row',
@@ -241,12 +361,12 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#FDF2F8',
+    backgroundColor: BIRTHDAY_COLORS.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
     borderWidth: 2,
-    borderColor: '#FBCFE8',
+    borderColor: BIRTHDAY_COLORS.primaryBorder,
   },
   birthdayInfo: {
     flex: 1,
@@ -259,7 +379,7 @@ const styles = StyleSheet.create({
   },
   birthdayDate: {
     fontSize: 16,
-    color: '#6B7280',
+    color: BIRTHDAY_COLORS.neutral,
     marginBottom: 8,
   },
   daysContainer: {
@@ -269,17 +389,32 @@ const styles = StyleSheet.create({
   daysText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: BIRTHDAY_COLORS.neutral,
     marginLeft: 6,
   },
   daysTextHighlighted: {
-    color: '#EC4899',
+    color: BIRTHDAY_COLORS.primary,
+  },
+  actionButtons: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+  },
+  deleteButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#FEF2F2',
   },
   thisMonthBadge: {
     position: 'absolute',
     top: 12,
     right: 12,
-    backgroundColor: '#EC4899',
+    backgroundColor: BIRTHDAY_COLORS.primary,
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -287,7 +422,7 @@ const styles = StyleSheet.create({
   thisMonthBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#fff',
+    color: BIRTHDAY_COLORS.background,
   },
   emptyState: {
     alignItems: 'center',
@@ -304,7 +439,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: BIRTHDAY_COLORS.neutral,
     textAlign: 'center',
     lineHeight: 22,
   },
