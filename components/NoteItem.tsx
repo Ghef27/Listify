@@ -55,6 +55,13 @@ export function NoteItem({
             <Text style={styles.expiredText}>! Expired</Text>
           )}
         </View>
+        <Text style={styles.creationDate}>
+          {new Date(note.createdAt).toLocaleDateString('en-US', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          })}
+        </Text>
       </View>
       
       <View style={styles.actionButtons}>
@@ -143,6 +150,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#EF4444',
+  },
+  creationDate: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
   },
   actionButtons: {
     flexDirection: 'row',
