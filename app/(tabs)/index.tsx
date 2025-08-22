@@ -102,6 +102,7 @@ export default function HomeScreen() {
   // Add focus listener to refresh data when screen becomes active
   useEffect(() => {
     const unsubscribe = router.addListener?.('focus', () => {
+      console.log('Home screen focused, reloading data...');
       loadData();
     });
     return unsubscribe;

@@ -95,13 +95,14 @@ export default function SettingsScreen() {
     console.log('Archive action completed, reloading lists...');
     await loadLists();
     
-    // Force refresh of other screens by updating storage timestamp
-    // This will trigger useEffect hooks in other components that depend on lists
-    const currentLists = await StorageService.getLists();
-    await StorageService.saveLists(currentLists);
-    
     setShowArchiveModal(false);
     setSelectedListForArchive(null);
+    
+    // Force refresh of home screen by navigating back to it
+    // This ensures the lists are updated immediately
+    setTimeout(() => {
+      router.push('/(tabs)/');
+    }, 100);
   };
 
   const handleTestSpeech = () => {
