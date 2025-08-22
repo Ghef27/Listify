@@ -10,7 +10,7 @@ import {
   Animated
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Cake, Calendar, Plus, Edit3, Trash2 } from 'lucide-react-native';
+import { Cake, Calendar, Plus, CreditCard as Edit3, Trash2 } from 'lucide-react-native';
 import { StorageService } from '@/utils/storage';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
 import { AddBirthdayModal } from '@/components/AddBirthdayModal';
