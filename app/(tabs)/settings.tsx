@@ -99,12 +99,6 @@ export default function SettingsScreen() {
     
     setShowArchiveModal(false);
     setSelectedListForArchive(null);
-    
-    // Force refresh of home screen by navigating back to it
-    // This ensures the lists are updated immediately
-    setTimeout(() => {
-      router.push('/(tabs)/');
-    }, 100);
   };
 
   const handleTestSpeech = () => {
