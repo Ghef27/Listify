@@ -257,7 +257,7 @@ export default function BirthdaysScreen() {
                       >
                         <Edit3 size={16} color={BIRTHDAY_COLORS.neutral} />
                       </TouchableOpacity>
-                      
+
                       <TouchableOpacity 
                         style={styles.deleteButton}
                         onPress={() => handleDeleteBirthday(birthday.id)}
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     color: BIRTHDAY_COLORS.primary,
   },
   actionButtons: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
