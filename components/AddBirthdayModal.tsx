@@ -13,7 +13,6 @@ import {
   Image,
 } from 'react-native';
 import { useEffect } from 'react';
-import * as ImagePicker from 'expo-image-picker';
 import { X, Camera, Calendar } from 'lucide-react-native';
 import { Note } from '@/types';
 
@@ -73,6 +72,15 @@ export function AddBirthdayModal({ visible, onClose, onSave, editingBirthday }: 
   };
 
   const handleImageUpload = () => {
+    // For now, use sample images since expo-image-picker requires native modules
+    const sampleImages = [
+      'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'https://images.pexels.com/photos/1484794/pexels-photo-1484794.jpeg?auto=compress&cs=tinysrgb&w=400',
+    ];
+
     Alert.alert(
       'Select Photo',
       'Choose how to add a photo',
@@ -84,68 +92,16 @@ export function AddBirthdayModal({ visible, onClose, onSave, editingBirthday }: 
           onPress: () => setSelectedImage(null)
         }] : []),
         { 
-          text: 'Take Photo', 
-          onPress: openCamera
+          text: 'Use Sample Photo', 
+          onPress: () => {
+            const randomImage = sampleImages[Math.floor(Math.random() * sampleImages.length)];
+            setSelectedImage(randomImage);
+          }
         },
-        { 
-          text: 'Choose from Gallery', 
-          onPress: openImageLibrary
-        }
       ]
     );
   };
 
-  const openCamera = async () => {
-    try {
-      // Request camera permissions
-      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
-      
-      if (cameraPermission.status !== 'granted') {
-        Alert.alert('Permission Required', 'Camera permission is required to take photos.');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        setSelectedImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('Error opening camera:', error);
-      Alert.alert('Error', 'Failed to open camera. Please try again.');
-    }
-  };
-
-  const openImageLibrary = async () => {
-    try {
-      // Request media library permissions
-      const libraryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (libraryPermission.status !== 'granted') {
-        Alert.alert('Permission Required', 'Photo library permission is required to select photos.');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        setSelectedImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('Error opening image library:', error);
-      Alert.alert('Error', 'Failed to open photo library. Please try again.');
-    }
-  };
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
