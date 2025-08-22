@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { List, Search, Settings, Bell } from 'lucide-react-native';
+import { List, Search, Settings, Bell, Cake } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -39,6 +39,15 @@ export default function TabLayout() {
           title: 'Reminders',
           tabBarIcon: ({ size, color }) => (
             <Bell size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="birthdays"
+        options={{
+          title: 'Birthdays',
+          tabBarIcon: ({ size, color }) => (
+            <Cake size={size} color={color} />
           ),
         }}
       />

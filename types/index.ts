@@ -7,6 +7,9 @@ export interface Note {
   updatedAt: Date;
   reminderDate?: Date;
   reminderExpired?: boolean;
+  birthdayMonth?: number;
+  birthdayDay?: number;
+  birthdayImage?: string;
 }
 
 export interface ListData {

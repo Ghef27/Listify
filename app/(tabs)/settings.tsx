@@ -142,28 +142,32 @@ export default function SettingsScreen() {
           {lists.map((list) => (
             <View key={list.name} style={[
               styles.settingItem,
-              list.archived && styles.settingItemArchived
+              list.archived && styles.settingItemArchived,
+              list.name === 'Birthdays' && styles.settingItemSpecial
             ]}>
               <View style={styles.settingLeft}>
                 <View style={[styles.colorDot, { backgroundColor: list.color }]} />
                 <Text style={[
                   styles.settingText,
-                  list.archived && styles.settingTextArchived
+                  list.archived && styles.settingTextArchived,
+                  list.name === 'Birthdays' && styles.settingTextSpecial
                 ]}>
                   {list.name}
                 </Text>
               </View>
-              <TouchableOpacity 
-                style={styles.archiveButton}
-                onPress={() => handleToggleArchive(list.name, list.archived || false)}
-               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                {list.archived ? (
-                  <ArchiveRestore size={18} color="#14B8A6" />
-                ) : (
-                  <Archive size={18} color="#6B7280" />
-                )}
-              </TouchableOpacity>
+              {list.name !== 'Birthdays' && (
+                <TouchableOpacity 
+                  style={styles.archiveButton}
+                  onPress={() => handleToggleArchive(list.name, list.archived || false)}
+                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  {list.archived ? (
+                    <ArchiveRestore size={18} color="#14B8A6" />
+                  ) : (
+                    <Archive size={18} color="#6B7280" />
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
           ))}
         </View>
@@ -370,6 +374,15 @@ const styles = StyleSheet.create({
   settingTextArchived: {
     fontStyle: 'italic',
     color: '#6B7280',
+  },
+  settingItemSpecial: {
+    backgroundColor: '#FDF2F8',
+    borderWidth: 1,
+    borderColor: '#FBCFE8',
+  },
+  settingTextSpecial: {
+    color: '#BE185D',
+    fontWeight: '600',
   },
   settingSubtext: {
     fontSize: 14,

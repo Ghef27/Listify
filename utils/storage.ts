@@ -50,6 +50,31 @@ export class StorageService {
     }
   }
 
+  static async addBirthdayNote(
+    name: string, 
+    month: number, 
+    day: number, 
+    image?: string
+  ): Promise<void> {
+    try {
+      const notes = await this.getNotes();
+      const newNote: Note = {
+        id: Date.now().toString(),
+        text: name,
+        listName: 'Birthdays',
+        completed: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        birthdayMonth: month,
+        birthdayDay: day,
+        birthdayImage: image,
+      };
+      notes.push(newNote);
+      await this.saveNotes(notes);
+    } catch (error) {
+      console.error('Error adding birthday note:', error);
+    }
+  }
   static async updateNote(id: string, updates: Partial<Note>): Promise<void> {
     try {
       const notes = await this.getNotes();
@@ -97,6 +122,7 @@ export class StorageService {
           { name: 'Personal', color: '#14B8A6' },
           { name: 'Work', color: '#10B981' },
           { name: 'Shopping', color: '#059669' },
+          { name: 'Birthdays', color: '#EC4899' },
         ];
         await this.saveLists(defaultLists);
         return defaultLists;
@@ -183,7 +209,7 @@ export class StorageService {
         .map(list => list.name);
       
       return notes
-        .filter(note => !archivedListNames.includes(note.listName))
+        .filter(note => !archivedListNames.includes(note.listName) && note.listName !== 'Birthdays')
         .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         .slice(0, limit);
     } catch (error) {

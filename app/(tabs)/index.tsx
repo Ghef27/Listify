@@ -68,7 +68,7 @@ export default function HomeScreen() {
     ]);
     
     // Filter out archived lists
-    const activeListsData = listsData.filter(list => !list.archived);
+    const activeListsData = listsData.filter(list => !list.archived && list.name !== 'Birthdays');
     
     // Calculate note counts for each list
     const listsWithCounts = activeListsData.map(list => ({
