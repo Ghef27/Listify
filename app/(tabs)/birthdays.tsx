@@ -20,11 +20,11 @@ import { Note } from '@/types';
 // CUSTOMIZABLE BIRTHDAY CARD STYLING
 // ============================================
 const BIRTHDAY_COLORS = {
-  primary: '#EC4899',           // Main pink color
-  primaryLight: '#FDF2F8',     // Light pink background
-  primaryBorder: '#FBCFE8',    // Pink border
-  secondary: '#BE185D',        // Darker pink for text
-  accent: '#F97316',           // Orange accent for highlights
+  primary: '#14B8A6',           // Main teal color (matches app theme)
+  primaryLight: '#F0FDFA',     // Light teal background
+  primaryBorder: '#CCFBF1',    // Teal border
+  secondary: '#0F766E',        // Darker teal for text
+  accent: '#059669',           // Darker teal accent for highlights
   neutral: '#6B7280',          // Gray for regular text
   background: '#fff',          // Card background
   shadow: '#000',              // Shadow color

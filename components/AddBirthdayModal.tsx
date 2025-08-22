@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#EC4899',
+    backgroundColor: '#14B8A6',
   },
   saveButtonDisabled: {
     backgroundColor: '#F3F4F6',
@@ -315,8 +315,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   monthChipSelected: {
-    backgroundColor: '#EC4899',
-    borderColor: '#EC4899',
+    backgroundColor: '#14B8A6',
+    borderColor: '#14B8A6',
   },
   monthChipText: {
     fontSize: 14,
@@ -342,8 +342,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   dayChipSelected: {
-    backgroundColor: '#EC4899',
-    borderColor: '#EC4899',
+    backgroundColor: '#14B8A6',
+    borderColor: '#14B8A6',
   },
   dayChipText: {
     fontSize: 14,
@@ -357,17 +357,17 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   previewCard: {
-    backgroundColor: '#FDF2F8',
+    backgroundColor: '#F0FDFA',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#FBCFE8',
+    borderColor: '#CCFBF1',
   },
   previewText: {
     fontSize: 16,
-    color: '#BE185D',
+    color: '#0F766E',
     marginLeft: 12,
     flex: 1,
   },

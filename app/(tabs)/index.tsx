@@ -7,6 +7,7 @@ import {
   StyleSheet, 
   RefreshControl 
 } from 'react-native';
+import { Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Clock, CircleAlert as AlertCircle } from 'lucide-react-native';
@@ -34,7 +35,7 @@ const TITLE_FONT = 'Poppins-Bold';      // Options: 'Poppins-Bold', 'Inter-Bold'
 const SUBTITLE_FONT = 'Inter-Regular';  // Options: 'Inter-Regular', 'Poppins-Regular', or leave empty for default
 
 // Style configuration - easily modify colors, sizes, and spacing
-const TITLE_COLOR = '#1F2937';          // Title color (dark gray by default)
+const TITLE_COLOR = '#14B8A6';          // Title color (teal to match add button)
 const TITLE_ALIGNMENT = 'center';          // Title color (dark gray by default)
 const SUBTITLE_COLOR = '#6B7280';       // Subtitle color (medium gray by default)
 const TITLE_SIZE = 32;                  // Title font size
@@ -52,6 +53,7 @@ export default function HomeScreen() {
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [titlePulseAnimation] = useState(new Animated.Value(1));
 
   // Load custom fonts
   const [fontsLoaded] = useFonts({
@@ -63,6 +65,25 @@ export default function HomeScreen() {
     'Poppins-Bold': Poppins_700Bold,
   });
 
+  // Start title pulse animation
+  useEffect(() => {
+    const pulseAnimation = () => {
+      Animated.sequence([
+        Animated.timing(titlePulseAnimation, {
+          toValue: 1.02,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(titlePulseAnimation, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ]).start(() => pulseAnimation());
+    };
+    
+    pulseAnimation();
+  }, [titlePulseAnimation]);
   const loadData = useCallback(async () => {
     const [listsData, notes, actionNotes, allNotes] = await Promise.all([
       StorageService.getLists(),
@@ -182,16 +203,17 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={[
+        <Animated.Text style={[
           styles.title,
           { 
             fontFamily: TITLE_FONT,
             color: TITLE_COLOR,
-            fontSize: TITLE_SIZE
+            fontSize: TITLE_SIZE,
+            transform: [{ scale: titlePulseAnimation }]
           }
         ]}>
           {MAIN_TITLE}
-        </Text>
+        </Animated.Text>
         <Text style={[
           styles.subtitle,
           { 
@@ -276,7 +298,7 @@ export default function HomeScreen() {
                     />
                   ) : (
                     <View style={styles.birthdayImagePlaceholder}>
-                      <Cake size={20} color="#EC4899" />
+                      <Cake size={20} color="#14B8A6" />
                     </View>
                   )}
                   
@@ -512,12 +534,12 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#FBCFE8',
+    backgroundColor: '#F0FDFA',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
     borderWidth: 1,
-    borderColor: '#F3E8FF',
+    borderColor: '#CCFBF1',
   },
   birthdayInfo: {
     flex: 1,
@@ -525,21 +547,21 @@ const styles = StyleSheet.create({
   birthdayName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#BE185D',
+    color: '#0F766E',
     marginBottom: 2,
   },
   birthdayDate: {
     fontSize: 14,
-    color: '#EC4899',
+    color: '#14B8A6',
     marginBottom: 2,
   },
   birthdayDays: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#BE185D',
+    color: '#0F766E',
   },
   birthdayBadge: {
-    backgroundColor: '#EC4899',
+    backgroundColor: '#14B8A6',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
