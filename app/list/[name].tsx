@@ -50,18 +50,23 @@ export default function ListScreen() {
     
     const listNotes = allNotes.filter(note => note.listName === name);
     
-    // Sort incomplete notes by most recent first (updatedAt desc)
-    const incompleteNotes = listNotes
-      .filter(note => !note.completed)
+    // Separate notes by priority: expired reminders first, then incomplete, then completed
+    const expiredReminderNotes = listNotes.filter(note => 
+      !note.completed && 
+      note.reminderDate && 
+      new Date(note.reminderDate) < new Date()
+    ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    
+    const incompleteNotes = listNotes.filter(note => 
+      !note.completed && 
+      (!note.reminderDate || new Date(note.reminderDate) >= new Date())
+    ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    
+    const completedNotes = listNotes.filter(note => note.completed)
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     
-    // Sort completed notes by most recent first (updatedAt desc)  
-    const completedNotes = listNotes
-      .filter(note => note.completed)
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-    
-    // Keep completed notes at the bottom, but both groups sorted by most recent
-    const sortedNotes = [...incompleteNotes, ...completedNotes];
+    // Order: expired reminders first, then incomplete notes, then completed notes
+    const sortedNotes = [...expiredReminderNotes, ...incompleteNotes, ...completedNotes];
     
     setNotes(sortedNotes);
   }, [name]);
