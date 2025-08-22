@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { 
   Trash2, 
   Mic, 
@@ -26,6 +27,7 @@ import { StorageService } from '@/utils/storage';
 import { ListData } from '@/types';
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const [lists, setLists] = useState<ListData[]>([]);
   const [showAddListModal, setShowAddListModal] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
