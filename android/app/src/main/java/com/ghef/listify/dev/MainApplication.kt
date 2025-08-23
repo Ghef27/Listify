@@ -2,7 +2,7 @@ package com.ghef.listify.dev
 
 import android.app.Application
 import android.content.res.Configuration
-import com.dieam.reactnativepushnotification.ReactNativePushNotificationPackage
+// import com.dieam.reactnativepushnotification.ReactNativePushNotificationPackage
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactNativeHost
@@ -25,7 +25,7 @@ class MainApplication : Application(), ReactApplication {
             val packages = PackageList(this).packages
             // Packages that cannot be autolinked yet can be added manually here, for example:
             // packages.add(MyReactNativePackage())
-            packages.add(ReactNativePushNotificationPackage())
+            // packages.add(ReactNativePushNotificationPackage())
             return packages
           }
 

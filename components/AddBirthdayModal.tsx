@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -12,9 +12,10 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import { useEffect } from 'react';
 import { X, Camera, Calendar } from 'lucide-react-native';
 import { Note } from '@/types';
+// 1. Import the image picker library
+import * as ImagePicker from 'expo-image-picker';
 
 interface AddBirthdayModalProps {
   visible: boolean;
@@ -29,7 +30,6 @@ export function AddBirthdayModal({ visible, onClose, onSave, editingBirthday }: 
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  // Populate fields when editing
   useEffect(() => {
     if (editingBirthday && visible) {
       setName(editingBirthday.text);
@@ -37,20 +37,20 @@ export function AddBirthdayModal({ visible, onClose, onSave, editingBirthday }: 
       setSelectedDay(editingBirthday.birthdayDay || null);
       setSelectedImage(editingBirthday.birthdayImage || null);
     } else if (!editingBirthday && visible) {
-      // Reset for new birthday
       setName('');
       setSelectedMonth(null);
       setSelectedDay(null);
       setSelectedImage(null);
     }
   }, [editingBirthday, visible]);
+
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
   const getDaysInMonth = (month: number) => {
-    const daysInMonth = new Date(2024, month - 1, 0).getDate();
+    const daysInMonth = new Date(2024, month, 0).getDate();
     return Array.from({ length: daysInMonth }, (_, i) => i + 1);
   };
 
@@ -71,35 +71,27 @@ export function AddBirthdayModal({ visible, onClose, onSave, editingBirthday }: 
     onClose();
   };
 
-  const handleImageUpload = () => {
-    // For now, use sample images since expo-image-picker requires native modules
-    const sampleImages = [
-      'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1484794/pexels-photo-1484794.jpeg?auto=compress&cs=tinysrgb&w=400',
-    ];
+  // 2. Replace the old handleImageUpload function with this new one
+  const handleImageUpload = async () => {
+    // Request permission to access the media library
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Sorry, we need camera roll permissions to make this work!');
+      return;
+    }
 
-    Alert.alert(
-      'Select Photo',
-      'Choose how to add a photo',
-      [
-        { text: 'Cancel' },
-        ...(selectedImage ? [{ 
-          text: 'Remove Photo', 
-          style: 'destructive' as const,
-          onPress: () => setSelectedImage(null)
-        }] : []),
-        { 
-          text: 'Use Sample Photo', 
-          onPress: () => {
-            const randomImage = sampleImages[Math.floor(Math.random() * sampleImages.length)];
-            setSelectedImage(randomImage);
-          }
-        },
-      ]
-    );
+    // Launch the image library
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Only allow images
+      allowsEditing: true, // Allow user to crop/edit the image
+      aspect: [1, 1], // Enforce a square aspect ratio
+      quality: 0.8, // Compress image to 80% quality
+    });
+    
+    // Set the selected image if the user didn't cancel
+    if (!result.canceled) {
+      setSelectedImage(result.assets[0].uri);
+    }
   };
 
 
@@ -148,7 +140,7 @@ export function AddBirthdayModal({ visible, onClose, onSave, editingBirthday }: 
                 <>
                   <Camera size={32} color="#6B7280" />
                   <Text style={styles.imageUploadText}>
-                    {selectedImage ? 'Tap to change photo' : 'Tap to add photo'}
+                    Tap to add photo
                   </Text>
                 </>
               )}
@@ -167,7 +159,7 @@ export function AddBirthdayModal({ visible, onClose, onSave, editingBirthday }: 
                   ]}
                   onPress={() => {
                     setSelectedMonth(index + 1);
-                    setSelectedDay(null); // Reset day when month changes
+                    setSelectedDay(null);
                   }}
                 >
                   <Text style={[
@@ -222,6 +214,7 @@ export function AddBirthdayModal({ visible, onClose, onSave, editingBirthday }: 
   );
 }
 
+// ... Your styles remain the same
 const styles = StyleSheet.create({
   container: {
     flex: 1,
