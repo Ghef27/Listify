@@ -1,4 +1,4 @@
-package com.ghef.listify.dev
+package com.ghef.listify
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

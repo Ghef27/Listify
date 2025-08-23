@@ -11,15 +11,16 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "splash": {
-  "image": "./assets/images/icon.png",
-  "resizeMode": "contain",
-  "backgroundColor": "#00d0ce"
-},
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#00d0ce"
+    },
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ghef.listify"
     },
     "web": {
       "bundler": "metro",
@@ -30,7 +31,7 @@
       "expo-router",
       "expo-font",
       "expo-web-browser",
-      "expo-splash-screen" 
+      "expo-splash-screen"
     ],
     "experiments": {
       "typedRoutes": true
@@ -40,6 +41,9 @@
       "eas": {
         "projectId": "170da104-9f57-4b45-89ad-34360db062c7"
       }
+    },
+    "android": {
+      "package": "com.ghef.listify"
     }
   }
 }
