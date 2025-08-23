@@ -70,13 +70,13 @@ export default function HomeScreen() {
     const pulseAnimation = () => {
       Animated.sequence([
         Animated.timing(titlePulseAnimation, {
-          toValue: 1.02,
-          duration: 2000,
+          toValue: 1.4,
+          duration: 1000,
           useNativeDriver: true,
         }),
         Animated.timing(titlePulseAnimation, {
           toValue: 1,
-          duration: 2000,
+          duration: 1000,
           useNativeDriver: true,
         }),
       ]).start(() => pulseAnimation());
@@ -267,7 +267,7 @@ export default function HomeScreen() {
         {thisMonthBirthdays.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Cake size={20} color="#EC4899" />
+              <Cake size={20} color="#00d0ce" />
               <Text style={styles.sectionTitle}>This Month's Birthdays</Text>
             </View>
             {thisMonthBirthdays.map((birthday) => {
@@ -413,11 +413,12 @@ const styles = StyleSheet.create({
     backgroundColor: HEADER_BACKGROUND, // Use customizable background color
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+    alignItems: 'center',
   },
   // Title styling - font family, color, and size are now configurable above
   title: {
     fontWeight: 'bold',
-    textAlign: TITLE_ALIGNMENT, // Use the new variable here  
+    // textAlign: TITLE_ALIGNMENT, // Use the new variable here  
     // fontSize, color, and fontFamily are applied inline for easy customization
   },
   // Subtitle styling - font family, color, and size are now configurable above
@@ -509,7 +510,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   birthdayCard: {
-    backgroundColor: '#FDF2F8',
+    backgroundColor: '#f0f6f6ff',
     borderRadius: 12,
     padding: 16,
     marginVertical: 4,
@@ -517,7 +518,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#FBCFE8',
+    borderColor: '#00d0ce',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -552,13 +553,13 @@ const styles = StyleSheet.create({
   },
   birthdayDate: {
     fontSize: 14,
-    color: '#14B8A6',
+    color: '#0F766E',
     marginBottom: 2,
   },
   birthdayDays: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#0F766E',
+   // fontWeight: '600',
+    color: '#0F766E', //#14B8A6
   },
   birthdayBadge: {
     backgroundColor: '#14B8A6',
