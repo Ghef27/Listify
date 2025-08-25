@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity 
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search, X } from 'lucide-react-native';
 import { StorageService } from '@/utils/storage';
 import { NoteItem } from '@/components/NoteItem';
@@ -15,6 +15,7 @@ import { ReminderModal } from '@/components/ReminderModal';
 import { Note } from '@/types';
 
 export default function SearchScreen() {
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const [allNotes, setAllNotes] = useState<Note[]>([]);
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
@@ -83,7 +84,7 @@ export default function SearchScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Search</Text>
       </View>
@@ -153,7 +154,7 @@ export default function SearchScreen() {
         onSave={handleSaveReminder}
         noteText={selectedNoteForReminder?.text || ''}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

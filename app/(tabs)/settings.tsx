@@ -1,20 +1,20 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
   Alert,
   TextInput,
-  Modal 
+  Modal
 } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { 
-  Trash2, 
-  Mic, 
+import {
+  Trash2,
+  Mic,
   ChevronRight,
   Info,
   Plus,
@@ -27,6 +27,7 @@ import { StorageService } from '@/utils/storage';
 import { ListData } from '@/types';
 
 export default function SettingsScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [lists, setLists] = useState<ListData[]>([]);
   const [showAddListModal, setShowAddListModal] = useState(false);
@@ -36,8 +37,8 @@ export default function SettingsScreen() {
   const [newListColor, setNewListColor] = useState('#14B8A6');
 
   const colors = [
-    '#14B8A6','#10B981', '#059669','#047857','#86e546ff','#f80303ff','#DC2626', '#DB2777', '#BE185D','#B45309','#D97706','#CA8A04', '#d9c87aff',
-    '#e0e546ff','#46b5e5ff','#7C3AED',    '#4F46E5',   '#a546e5ff',    '#081401ff' 
+    '#14B8A6', '#10B981', '#059669', '#047857', '#86e546ff', '#f80303ff', '#DC2626', '#DB2777', '#BE185D', '#B45309', '#D97706', '#CA8A04', '#d9c87aff',
+    '#e0e546ff', '#46b5e5ff', '#7C3AED', '#4F46E5', '#a546e5ff', '#081401ff'
   ];
 
   const loadLists = useCallback(async () => {
@@ -84,19 +85,19 @@ export default function SettingsScreen() {
   };
 
   const handleToggleArchive = async (listName: string, isArchived: boolean) => {
-   console.log('Archive button pressed for:', listName, 'Currently archived:', isArchived);
+    console.log('Archive button pressed for:', listName, 'Currently archived:', isArchived);
     setSelectedListForArchive({ name: listName, isArchived });
     setShowArchiveModal(true);
   };
 
   const confirmArchiveAction = async () => {
     if (!selectedListForArchive) return;
-    
+
     console.log('User confirmed archive action for:', selectedListForArchive.name);
     await StorageService.toggleListArchive(selectedListForArchive.name);
     console.log('Archive action completed, reloading lists...');
     await loadLists();
-    
+
     setShowArchiveModal(false);
     setSelectedListForArchive(null);
   };
@@ -110,7 +111,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Settings</Text>
       </View>
@@ -118,7 +119,7 @@ export default function SettingsScreen() {
       <ScrollView style={styles.content}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data Management</Text>
-          
+
           <TouchableOpacity style={styles.settingItem} onPress={handleClearAllData}>
             <View style={styles.settingLeft}>
               <Trash2 size={20} color="#EF4444" />
@@ -131,14 +132,14 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Lists</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.addButton}
               onPress={() => setShowAddListModal(true)}
             >
               <Plus size={20} color="#14B8A6" />
             </TouchableOpacity>
           </View>
-          
+
           {lists.map((list) => (
             <View key={list.name} style={[
               styles.settingItem,
@@ -156,10 +157,10 @@ export default function SettingsScreen() {
                 </Text>
               </View>
               {list.name !== 'Birthdays' && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.archiveIconButton}
                   onPress={() => handleToggleArchive(list.name, list.archived || false)}
-                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   {list.archived ? (
                     <ArchiveRestore size={18} color="#14B8A6" />
@@ -174,7 +175,7 @@ export default function SettingsScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Speech Recognition</Text>
-          
+
           <TouchableOpacity style={styles.settingItem} onPress={handleTestSpeech}>
             <View style={styles.settingLeft}>
               <Mic size={20} color="#14B8A6" />
@@ -186,7 +187,7 @@ export default function SettingsScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
-          
+
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
               <Info size={20} color="#6B7280" />
@@ -270,7 +271,7 @@ export default function SettingsScreen() {
                 {selectedListForArchive?.isArchived ? 'Unarchive' : 'Archive'} "{selectedListForArchive?.name}"?
               </Text>
               <Text style={styles.confirmationMessage}>
-                {selectedListForArchive?.isArchived 
+                {selectedListForArchive?.isArchived
                   ? 'This will make the list and its notes visible again in the main view.'
                   : 'This will hide the list and its notes from the main view. You can unarchive it later from settings.'
                 }
@@ -278,7 +279,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={() => {
                   setShowArchiveModal(false);
@@ -287,8 +288,8 @@ export default function SettingsScreen() {
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[
                   styles.confirmButton,
                   selectedListForArchive?.isArchived ? styles.unarchiveButton : styles.archiveConfirmButton
@@ -303,7 +304,7 @@ export default function SettingsScreen() {
           </View>
         </SafeAreaView>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -397,7 +398,7 @@ const styles = StyleSheet.create({
   },
   archiveIconButton: {
     padding: 8,
-   backgroundColor: 'transparent',
+    backgroundColor: 'transparent',
   },
   infoCard: {
     backgroundColor: '#F0FDFA',

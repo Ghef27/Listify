@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
   RefreshControl,
   Image,
   TouchableOpacity,
   Animated
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Cake, Calendar, Plus, PencilLine as Edit3, Trash2 } from 'lucide-react-native';
 import { StorageService } from '@/utils/storage';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
@@ -37,6 +37,7 @@ const ANIMATION_CONFIG = {
 };
 // ============================================
 export default function BirthdaysScreen() {
+  const insets = useSafeAreaInsets();
   const [birthdays, setBirthdays] = useState<Note[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -47,18 +48,18 @@ export default function BirthdaysScreen() {
   const loadBirthdays = useCallback(async () => {
     const allNotes = await StorageService.getNotes();
     const birthdayNotes = allNotes.filter(note => note.listName === 'Birthdays');
-    
+
     // Sort birthdays by upcoming dates
     const sortedBirthdays = birthdayNotes.sort((a, b) => {
       if (!a.birthdayMonth || !a.birthdayDay || !b.birthdayMonth || !b.birthdayDay) return 0;
-      
+
       const today = new Date();
       const currentYear = today.getFullYear();
-      
+
       // Create dates for this year
       let dateA = new Date(currentYear, a.birthdayMonth - 1, a.birthdayDay);
       let dateB = new Date(currentYear, b.birthdayMonth - 1, b.birthdayDay);
-      
+
       // If the birthday has passed this year, use next year
       if (dateA < today) {
         dateA = new Date(currentYear + 1, a.birthdayMonth - 1, a.birthdayDay);
@@ -66,20 +67,20 @@ export default function BirthdaysScreen() {
       if (dateB < today) {
         dateB = new Date(currentYear + 1, b.birthdayMonth - 1, b.birthdayDay);
       }
-      
+
       return dateA.getTime() - dateB.getTime();
     });
-    
+
     setBirthdays(sortedBirthdays);
-    
+
     // Initialize pulse animations for this month birthdays
     const animations: Record<string, Animated.Value> = {};
     const currentMonth = new Date().getMonth() + 1;
-    
+
     sortedBirthdays.forEach(birthday => {
       if (birthday.birthdayMonth === currentMonth) {
         animations[birthday.id] = new Animated.Value(1);
-        
+
         // Start pulse animation
         const pulseAnimation = () => {
           Animated.sequence([
@@ -95,11 +96,11 @@ export default function BirthdaysScreen() {
             }),
           ]).start(() => pulseAnimation());
         };
-        
+
         pulseAnimation();
       }
     });
-    
+
     setPulseAnimations(animations);
   }, []);
 
@@ -125,14 +126,14 @@ export default function BirthdaysScreen() {
 
   const handleUpdateBirthday = async (name: string, month: number, day: number, image?: string) => {
     if (!editingBirthday) return;
-    
+
     await StorageService.updateNote(editingBirthday.id, {
       text: name,
       birthdayMonth: month,
       birthdayDay: day,
       birthdayImage: image,
     });
-    
+
     await loadBirthdays();
     setEditingBirthday(null);
   };
@@ -145,27 +146,27 @@ export default function BirthdaysScreen() {
     const today = new Date();
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth() + 1;
-    
+
     let birthdayDate = new Date(currentYear, month - 1, day);
-    
+
     // If birthday has passed this year, use next year
     if (birthdayDate < today) {
       birthdayDate = new Date(currentYear + 1, month - 1, day);
     }
-    
+
     const daysUntil = Math.ceil((birthdayDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     const isThisMonth = month === currentMonth;
-    
+
     return { daysUntil, isThisMonth, birthdayDate };
   };
 
   const formatBirthdayDate = (month: number, day: number) => {
     const date = new Date(2000, month - 1, day);
-    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+    return date.toLocaleString('en-US', { month: 'long', day: 'numeric' });
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Birthdays</Text>
         <Text style={styles.subtitle}>
@@ -173,7 +174,7 @@ export default function BirthdaysScreen() {
         </Text>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -191,38 +192,38 @@ export default function BirthdaysScreen() {
           <View style={styles.timeline}>
             {birthdays.map((birthday) => {
               if (!birthday.birthdayMonth || !birthday.birthdayDay) return null;
-              
+
               const { daysUntil, isThisMonth } = getUpcomingBirthdayInfo(
-                birthday.birthdayMonth, 
+                birthday.birthdayMonth,
                 birthday.birthdayDay
               );
-              
+
               const AnimatedCard = pulseAnimations[birthday.id] ? Animated.View : View;
               const animationProps = pulseAnimations[birthday.id] ? {
                 style: {
                   transform: [{ scale: pulseAnimations[birthday.id] }]
                 }
               } : {};
-              
+
               return (
                 <AnimatedCard
-                  key={birthday.id} 
+                  key={birthday.id}
                   {...animationProps}
                 >
                   <View
                   style={[
                     styles.birthdayCard,
                     isThisMonth && styles.birthdayCardHighlighted,
-                    isThisMonth && { 
+                    isThisMonth && {
                       shadowOpacity: ANIMATION_CONFIG.shadowIntensity,
-                      elevation: 6 
+                      elevation: 6
                     }
                   ]}
                   >
                   <View style={styles.birthdayContent}>
                     {birthday.birthdayImage ? (
-                      <Image 
-                        source={{ uri: birthday.birthdayImage }} 
+                      <Image
+                        source={{ uri: birthday.birthdayImage }}
                         style={styles.birthdayImage}
                       />
                     ) : (
@@ -230,7 +231,7 @@ export default function BirthdaysScreen() {
                         <Cake size={24} color={BIRTHDAY_COLORS.primary} />
                       </View>
                     )}
-                    
+
                     <View style={styles.birthdayInfo}>
                       <Text style={styles.birthdayName}>{birthday.text}</Text>
                       <Text style={styles.birthdayDate}>
@@ -242,15 +243,15 @@ export default function BirthdaysScreen() {
                           styles.daysText,
                           isThisMonth && styles.daysTextHighlighted
                         ]}>
-                          {daysUntil === 0 ? 'Today!' : 
-                           daysUntil === 1 ? 'Tomorrow' : 
+                          {daysUntil === 0 ? 'Today!' :
+                           daysUntil === 1 ? 'Tomorrow' :
                            `${daysUntil} days`}
                         </Text>
                       </View>
                     </View>
-                    
+
                     <View style={styles.actionButtons}>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.editButton}
                         onPress={() => handleEditBirthday(birthday)}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -258,7 +259,7 @@ export default function BirthdaysScreen() {
                         <Edit3 size={16} color={BIRTHDAY_COLORS.neutral} />
                       </TouchableOpacity>
 
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.deleteButton}
                         onPress={() => handleDeleteBirthday(birthday.id)}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -267,7 +268,7 @@ export default function BirthdaysScreen() {
                       </TouchableOpacity>
                     </View>
                   </View>
-                  
+
                   {isThisMonth && (
                     <View style={styles.thisMonthBadge}>
                       <Text style={styles.thisMonthBadgeText}>This Month</Text>
@@ -298,7 +299,7 @@ export default function BirthdaysScreen() {
         onSave={handleUpdateBirthday}
         editingBirthday={editingBirthday}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  TouchableOpacity, 
-  StyleSheet, 
-  RefreshControl 
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  RefreshControl
 } from 'react-native';
 import { Animated } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { ChevronRight, Clock, CircleAlert as AlertCircle } from 'lucide-react-native';
 import { Cake } from 'lucide-react-native';
 import { Image } from 'react-native';
@@ -44,6 +44,7 @@ const HEADER_BACKGROUND = '#fff';       // Header background color
 const TITLE_MARGIN_TOP = 4;             // Space between title and subtitle
 // ============================================
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [lists, setLists] = useState<ListData[]>([]);
   const [recentNotes, setRecentNotes] = useState<Note[]>([]);
@@ -81,9 +82,10 @@ export default function HomeScreen() {
         }),
       ]).start(() => pulseAnimation());
     };
-    
+
     pulseAnimation();
   }, [titlePulseAnimation]);
+
   const loadData = useCallback(async () => {
     const [listsData, notes, actionNotes, allNotes] = await Promise.all([
       StorageService.getLists(),
@@ -91,55 +93,39 @@ export default function HomeScreen() {
       StorageService.getActionNeededNotes(),
       StorageService.getNotes()
     ]);
-    
+
     // Filter out archived lists
     const activeListsData = listsData.filter(list => !list.archived && list.name !== 'Birthdays');
-    
+
     // Calculate note counts for each list
     const listsWithCounts = activeListsData.map(list => ({
       ...list,
       count: notes.filter(note => note.listName === list.name && !note.completed).length
     }));
-    
+
     setLists(listsWithCounts);
     setActionNeededNotes(actionNotes);
-    
+
     // Get this month's birthdays
     const currentMonth = new Date().getMonth() + 1;
-    const birthdayNotes = allNotes.filter(note => 
-      note.listName === 'Birthdays' && 
+    const birthdayNotes = allNotes.filter(note =>
+      note.listName === 'Birthdays' &&
       note.birthdayMonth === currentMonth
     );
     setThisMonthBirthdays(birthdayNotes);
-    
+
     // Get recent notes (last 5)
     const recent = await StorageService.getRecentNotesIncludingArchived(5);
     setRecentNotes(recent);
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // Refresh data when screen comes into focus (e.g., returning from settings)
-  useEffect(() => {
-    const focusHandler = () => {
-      loadData();
-    };
-    
-    // Listen for focus events
-    const unsubscribe = router.addListener?.('focus', focusHandler);
-    return unsubscribe;
-  }, [router, loadData]);
-
-  // Add focus listener to refresh data when screen becomes active
-  useEffect(() => {
-    const unsubscribe = router.addListener?.('focus', () => {
+  // Use useFocusEffect to reload data when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
       console.log('Home screen focused, reloading data...');
       loadData();
-    });
-    return unsubscribe;
-  }, [router, loadData]);
+    }, [loadData])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -201,11 +187,11 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Animated.Text style={[
           styles.title,
-          { 
+          {
             fontFamily: TITLE_FONT,
             color: TITLE_COLOR,
             fontSize: TITLE_SIZE,
@@ -216,7 +202,7 @@ export default function HomeScreen() {
         </Animated.Text>
         <Text style={[
           styles.subtitle,
-          { 
+          {
             fontFamily: SUBTITLE_FONT,
             color: SUBTITLE_COLOR,
             fontSize: SUBTITLE_SIZE,
@@ -227,7 +213,7 @@ export default function HomeScreen() {
         </Text>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -271,19 +257,19 @@ export default function HomeScreen() {
               <Text style={styles.sectionTitle}>This Month's Birthdays</Text>
             </View>
             {thisMonthBirthdays.map((birthday) => {
-              const daysUntil = birthday.birthdayMonth && birthday.birthdayDay ? 
+              const daysUntil = birthday.birthdayMonth && birthday.birthdayDay ?
                 (() => {
                   const today = new Date();
                   const currentYear = today.getFullYear();
                   let birthdayDate = new Date(currentYear, birthday.birthdayMonth - 1, birthday.birthdayDay);
-                  
+
                   if (birthdayDate < today) {
                     birthdayDate = new Date(currentYear + 1, birthday.birthdayMonth - 1, birthday.birthdayDay);
                   }
-                  
+
                   return Math.ceil((birthdayDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                 })() : 0;
-              
+
               return (
                 <TouchableOpacity
                   key={birthday.id}
@@ -292,8 +278,8 @@ export default function HomeScreen() {
                   activeOpacity={0.7}
                 >
                   {birthday.birthdayImage ? (
-                    <Image 
-                      source={{ uri: birthday.birthdayImage }} 
+                    <Image
+                      source={{ uri: birthday.birthdayImage }}
                       style={styles.birthdayImage}
                     />
                   ) : (
@@ -301,22 +287,22 @@ export default function HomeScreen() {
                       <Cake size={20} color="#14B8A6" />
                     </View>
                   )}
-                  
+
                   <View style={styles.birthdayInfo}>
                     <Text style={styles.birthdayName}>{birthday.text}</Text>
                     <Text style={styles.birthdayDate}>
-                      {birthday.birthdayMonth && birthday.birthdayDay && 
+                      {birthday.birthdayMonth && birthday.birthdayDay &&
                         new Date(2000, birthday.birthdayMonth - 1, birthday.birthdayDay)
                           .toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
                       }
                     </Text>
                     <Text style={styles.birthdayDays}>
-                      {daysUntil === 0 ? '🎉 Today!' : 
-                       daysUntil === 1 ? '🎂 Tomorrow' : 
+                      {daysUntil === 0 ? '🎉 Today!' :
+                       daysUntil === 1 ? '🎂 Tomorrow' :
                        `🗓️ ${daysUntil} days`}
                     </Text>
                   </View>
-                  
+
                   <View style={styles.birthdayBadge}>
                     <Text style={styles.birthdayBadgeText}>Birthday</Text>
                   </View>
@@ -398,7 +384,7 @@ export default function HomeScreen() {
         onSave={handleSaveReminder}
         noteText={selectedNoteForReminder?.text || ''}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

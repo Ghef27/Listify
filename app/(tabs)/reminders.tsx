@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
-  RefreshControl 
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  RefreshControl
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bell, Clock } from 'lucide-react-native';
 import { StorageService } from '@/utils/storage';
 import { NoteItem } from '@/components/NoteItem';
@@ -15,6 +15,7 @@ import { ReminderTimer } from '@/components/ReminderTimer';
 import { Note } from '@/types';
 
 export default function RemindersScreen() {
+  const insets = useSafeAreaInsets();
   const [notesWithReminders, setNotesWithReminders] = useState<Note[]>([]);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
@@ -24,14 +25,14 @@ export default function RemindersScreen() {
     const allNotes = await StorageService.getNotes();
     // Show all reminders, including from archived lists
     const reminders = allNotes.filter(note => note.reminderDate);
-    
+
     // Sort by reminder date (earliest first)
     const sortedReminders = reminders.sort((a, b) => {
       const dateA = new Date(a.reminderDate!);
       const dateB = new Date(b.reminderDate!);
       return dateA.getTime() - dateB.getTime();
     });
-    
+
     setNotesWithReminders(sortedReminders);
   }, []);
 
@@ -89,18 +90,18 @@ export default function RemindersScreen() {
     const reminder = new Date(reminderDate);
     const diffMs = reminder.getTime() - now.getTime();
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    
+
     const timeString = reminder.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
     });
-    
+
     const dateString = reminder.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
     });
-    
+
     if (diffDays === 0) {
       return `Today at ${timeString}`;
     } else if (diffDays === 1) {
@@ -117,7 +118,7 @@ export default function RemindersScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Reminders</Text>
         <Text style={styles.subtitle}>
@@ -125,7 +126,7 @@ export default function RemindersScreen() {
         </Text>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -167,8 +168,17 @@ export default function RemindersScreen() {
                 showDeleteButton={true}
                 showReminderButton={true}
               />
+
+              <View style={styles.timerContainer}>
+                <ReminderTimer
+                    reminderDate={new Date(note.reminderDate!)}
+                    isExpired={note.reminderExpired}
+                    onExpire={() => handleReminderExpire(note.id)}
+                />
+              </View>
+
             </View>
-            
+
           ))
         )}
       </ScrollView>
@@ -182,7 +192,7 @@ export default function RemindersScreen() {
         onSave={handleSaveReminder}
         noteText={selectedNoteForReminder?.text || ''}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
