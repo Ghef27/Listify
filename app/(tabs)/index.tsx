@@ -55,6 +55,7 @@ export default function HomeScreen() {
   const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [titlePulseAnimation] = useState(new Animated.Value(1));
+  const [editingNote, setEditingNote] = useState<Note | null>(null); // aste e pentru butonul de edit note
 
   // Load custom fonts
   const [fontsLoaded] = useFonts({
@@ -151,6 +152,17 @@ export default function HomeScreen() {
     await loadData();
   };
 
+  const handleEditNote = (note: Note) => {
+    setEditingNote(note);
+    setShowAddModal(true);
+  }; // asta e pentru butonul de edit note
+
+  const handleUpdateNote = async (text: string, listName: string) => {
+    if (!editingNote) return;
+    await StorageService.updateNote(editingNote.id, { text, listName });
+    await loadData();
+  }; // asta e pentru butonul de edit note
+
   const handleSetReminder = (note: Note) => {
     setSelectedNoteForReminder(note);
     setShowReminderModal(true);
@@ -232,6 +244,7 @@ export default function HomeScreen() {
                   onToggleComplete={handleToggleComplete}
                   onDelete={handleDeleteNote}
                   onSetReminder={handleSetReminder}
+                   onEdit={handleEditNote} // pentru butonul de edit note
                   showDeleteButton={true}
                   showReminderButton={true}
                   onPress={(note) => navigateToList(note.listName)}
@@ -348,6 +361,7 @@ export default function HomeScreen() {
                 onToggleComplete={handleToggleComplete}
                 onDelete={handleDeleteNote}
                 onSetReminder={handleSetReminder}
+                 onEdit={handleEditNote} //pentru butonul de edit note
                 showDeleteButton={true}
                 showReminderButton={true}
                 onPress={(note) => navigateToList(note.listName)}
@@ -368,10 +382,14 @@ export default function HomeScreen() {
 
       <FloatingActionButton onPress={() => setShowAddModal(true)} />
 
-      <AddNoteModal
+  <AddNoteModal
         visible={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSave={handleAddNote}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingNote(null); 
+        }}
+        onSave={editingNote ? handleUpdateNote : handleAddNote}
+        editingNote={editingNote}
         lists={lists}
       />
 

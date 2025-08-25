@@ -21,6 +21,7 @@ interface AddNoteModalProps {
   onSave: (text: string, listName: string) => void;
   initialList?: string;
   lists: ListData[];
+  editingNote?: Note | null; 
 }
 
 export function AddNoteModal({ visible, onClose, onSave, initialList, lists }: AddNoteModalProps) {

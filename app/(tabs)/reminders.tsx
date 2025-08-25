@@ -12,7 +12,8 @@ import { StorageService } from '@/utils/storage';
 import { NoteItem } from '@/components/NoteItem';
 import { ReminderModal } from '@/components/ReminderModal';
 import { ReminderTimer } from '@/components/ReminderTimer';
-import { Note } from '@/types';
+import { AddNoteModal } from '@/components/AddNoteModal';
+import { Note, ListData } from '@/types';
 
 export default function RemindersScreen() {
   const insets = useSafeAreaInsets();
@@ -21,12 +22,17 @@ export default function RemindersScreen() {
   const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadNotesWithReminders = useCallback(async () => {
-    const allNotes = await StorageService.getNotes();
-    // Show all reminders, including from archived lists
-    const reminders = allNotes.filter(note => note.reminderDate);
+  // State for editing notes
+  const [lists, setLists] = useState<ListData[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
 
-    // Sort by reminder date (earliest first)
+  // Renamed for consistency
+  const loadData = useCallback(async () => {
+    const allNotes = await StorageService.getNotes();
+    const listsData = await StorageService.getLists();
+
+    const reminders = allNotes.filter(note => note.reminderDate);
     const sortedReminders = reminders.sort((a, b) => {
       const dateA = new Date(a.reminderDate!);
       const dateB = new Date(b.reminderDate!);
@@ -34,29 +40,41 @@ export default function RemindersScreen() {
     });
 
     setNotesWithReminders(sortedReminders);
+    setLists(listsData);
   }, []);
 
   useEffect(() => {
-    loadNotesWithReminders();
-  }, [loadNotesWithReminders]);
+    loadData();
+  }, [loadData]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadNotesWithReminders();
+    await loadData();
     setRefreshing(false);
-  }, [loadNotesWithReminders]);
+  }, [loadData]);
+
+  const handleEditNote = (note: Note) => {
+    setEditingNote(note);
+    setShowAddModal(true);
+  };
+
+  const handleUpdateNote = async (text: string, listName: string) => {
+    if (!editingNote) return;
+    await StorageService.updateNote(editingNote.id, { text, listName });
+    await loadData(); // Correctly calls the renamed function
+  };
 
   const handleToggleComplete = async (noteId: string) => {
     const note = notesWithReminders.find(n => n.id === noteId);
     if (note) {
       await StorageService.updateNote(noteId, { completed: !note.completed });
-      await loadNotesWithReminders();
+      await loadData();
     }
   };
 
   const handleDeleteNote = async (noteId: string) => {
     await StorageService.deleteNote(noteId);
-    await loadNotesWithReminders();
+    await loadData();
   };
 
   const handleSetReminder = (note: Note) => {
@@ -66,14 +84,12 @@ export default function RemindersScreen() {
 
   const handleSaveReminder = async (reminderDate: Date) => {
     if (!selectedNoteForReminder) return;
-
     try {
       await StorageService.setNoteReminder(
         selectedNoteForReminder.id,
         reminderDate
       );
-
-      await loadNotesWithReminders();
+      await loadData();
       setSelectedNoteForReminder(null);
     } catch (error) {
       console.error('Error saving reminder:', error);
@@ -82,7 +98,7 @@ export default function RemindersScreen() {
 
   const handleReminderExpire = async (noteId: string) => {
     await StorageService.updateNote(noteId, { reminderExpired: true });
-    await loadNotesWithReminders();
+    await loadData();
   };
 
   const formatReminderTime = (reminderDate: Date) => {
@@ -106,8 +122,6 @@ export default function RemindersScreen() {
       return `Today at ${timeString}`;
     } else if (diffDays === 1) {
       return `Tomorrow at ${timeString}`;
-    } else if (diffDays < 7) {
-      return `${dateString} at ${timeString}`;
     } else {
       return `${dateString} at ${timeString}`;
     }
@@ -165,6 +179,7 @@ export default function RemindersScreen() {
                 onToggleComplete={handleToggleComplete}
                 onDelete={handleDeleteNote}
                 onSetReminder={handleSetReminder}
+                onEdit={handleEditNote}
                 showDeleteButton={true}
                 showReminderButton={true}
               />
@@ -176,12 +191,21 @@ export default function RemindersScreen() {
                     onExpire={() => handleReminderExpire(note.id)}
                 />
               </View>
-
             </View>
-
           ))
         )}
       </ScrollView>
+
+      <AddNoteModal
+        visible={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingNote(null);
+        }}
+        onSave={editingNote ? handleUpdateNote : () => {}}
+        editingNote={editingNote}
+        lists={lists}
+      />
 
       <ReminderModal
         visible={showReminderModal}

@@ -12,7 +12,8 @@ import { Search, X } from 'lucide-react-native';
 import { StorageService } from '@/utils/storage';
 import { NoteItem } from '@/components/NoteItem';
 import { ReminderModal } from '@/components/ReminderModal';
-import { Note } from '@/types';
+import { AddNoteModal } from '@/components/AddNoteModal';
+import { Note, ListData } from '@/types';
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
@@ -22,10 +23,16 @@ export default function SearchScreen() {
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
 
+  // State for editing notes
+  const [lists, setLists] = useState<ListData[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
+
   const loadNotes = useCallback(async () => {
     const notes = await StorageService.getNotes();
-    // Show all notes in search, including from archived lists
+    const listsData = await StorageService.getLists();
     setAllNotes(notes);
+    setLists(listsData);
   }, []);
 
   useEffect(() => {
@@ -43,6 +50,17 @@ export default function SearchScreen() {
       setFilteredNotes([]);
     }
   }, [searchQuery, allNotes]);
+
+  const handleEditNote = (note: Note) => {
+    setEditingNote(note);
+    setShowAddModal(true);
+  };
+
+  const handleUpdateNote = async (text: string, listName: string) => {
+    if (!editingNote) return;
+    await StorageService.updateNote(editingNote.id, { text, listName });
+    await loadNotes();
+  };
 
   const handleToggleComplete = async (noteId: string) => {
     const note = allNotes.find(n => n.id === noteId);
@@ -70,7 +88,6 @@ export default function SearchScreen() {
         selectedNoteForReminder.id,
         reminderDate
       );
-
       await loadNotes();
       setSelectedNoteForReminder(null);
     } catch (error) {
@@ -137,6 +154,7 @@ export default function SearchScreen() {
                 onToggleComplete={handleToggleComplete}
                 onDelete={handleDeleteNote}
                 onSetReminder={handleSetReminder}
+                onEdit={handleEditNote}
                 showDeleteButton={true}
                 showReminderButton={true}
               />
@@ -144,6 +162,17 @@ export default function SearchScreen() {
           </>
         )}
       </ScrollView>
+
+      <AddNoteModal
+        visible={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingNote(null);
+        }}
+        onSave={editingNote ? handleUpdateNote : () => {}}
+        editingNote={editingNote}
+        lists={lists}
+      />
 
       <ReminderModal
         visible={showReminderModal}

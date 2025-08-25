@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Check, Trash2, Bell } from 'lucide-react-native';
+import { Check, Trash2, Bell, Pencil } from 'lucide-react-native';
 import { Note } from '@/types';
 
 interface NoteItemProps {
@@ -8,6 +8,7 @@ interface NoteItemProps {
   onToggleComplete: (noteId: string) => void;
   onDelete?: (noteId: string) => void;
   onSetReminder?: (note: Note) => void;
+  onEdit?: (note: Note) => void;
   onPress?: (note: Note) => void;
   showDeleteButton?: boolean;
   showReminderButton?: boolean;
@@ -18,6 +19,7 @@ export function NoteItem({
   onToggleComplete, 
   onDelete, 
   onSetReminder,
+  onEdit,
   onPress, 
   showDeleteButton = false,
   showReminderButton = false 
@@ -65,6 +67,15 @@ export function NoteItem({
       </View>
       
       <View style={styles.actionButtons}>
+        {onEdit && (
+          <TouchableOpacity 
+            style={styles.editButton}
+            onPress={() => onEdit(note)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Pencil size={18} color="#6B7280" />
+          </TouchableOpacity>
+        )}
         {showReminderButton && onSetReminder && (
           <TouchableOpacity 
             style={styles.reminderButton}
@@ -157,7 +168,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   actionButtons: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     gap: 0,
   },
@@ -165,6 +176,9 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   deleteButton: {
+    padding: 8,
+  },
+  editButton: { // 👈 4. Add style for the edit button
     padding: 8,
   },
 });
