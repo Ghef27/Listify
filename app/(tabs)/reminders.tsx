@@ -158,13 +158,7 @@ export default function RemindersScreen() {
                   </View>
                 )}
               </View>
-              <View style={styles.timerContainer}>
-                <ReminderTimer
-                  reminderDate={new Date(note.reminderDate!)}
-                  isExpired={note.reminderExpired}
-                  onExpire={() => handleReminderExpire(note.id)}
-                />
-              </View>
+
               <NoteItem
                 note={note}
                 onToggleComplete={handleToggleComplete}
@@ -174,6 +168,7 @@ export default function RemindersScreen() {
                 showReminderButton={true}
               />
             </View>
+            
           ))
         )}
       </ScrollView>

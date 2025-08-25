@@ -52,8 +52,8 @@ export function NoteItem({
         <View style={styles.listNameContainer}>
           <Text style={styles.listName}>{note.listName}</Text>
           {note.reminderDate && new Date(note.reminderDate) < new Date() && (
-            <Text style={styles.expiredText}>! Expired</Text>
-          )}
+            <Text style={styles.expiredText}> </Text> // AICI ERA "! Expired" text dar daca il stergeam crapa aplicatia
+           )}
         </View>
         <Text style={styles.creationDate}>
           {new Date(note.createdAt).toLocaleDateString('en-US', {
