@@ -38,30 +38,24 @@ export function AddNoteModal({
 
   const {
     isListening,
-    transcript, // 👈 1. Get the transcript state from the hook
+    transcript,
     startListening,
     stopListening,
-    resetTranscript
-  } = useSpeechRecognition(); // 👈 2. Remove the incorrect callback
+  } = useSpeechRecognition();
 
-  // 👇 3. Use a useEffect to append the transcript to your text state
   useEffect(() => {
     if (transcript) {
       setText(prevText => `${prevText}${prevText ? ' ' : ''}${transcript}`);
-      resetTranscript(); // Reset transcript after appending it
     }
-  }, [transcript, resetTranscript]);
+  }, [transcript]);
 
-
-  // This hook handles pre-filling the form for editing or resetting it for a new note
   useEffect(() => {
     if (visible) {
       if (editingNote) {
-        // We are editing: pre-fill the form
         setText(editingNote.text);
         setSelectedList(editingNote.listName);
       } else {
-        // We are adding a new note: reset the form
+        setText('');
         const defaultList = lists.find(l => l.name === initialList && !l.archived);
         if (defaultList) {
           setSelectedList(defaultList.name);
@@ -73,7 +67,6 @@ export function AddNoteModal({
     }
   }, [visible, editingNote, lists, initialList]);
 
-  // This hook handles scrolling the selected list into view
   useEffect(() => {
     if (!visible) return;
     setTimeout(() => {
@@ -95,9 +88,10 @@ export function AddNoteModal({
   };
 
   const handleClose = () => {
+    if (isListening) {
+      stopListening();
+    }
     setText('');
-    stopListening();
-    resetTranscript();
     onClose();
   };
 
@@ -230,7 +224,7 @@ const styles = StyleSheet.create({
     width: 40,
   },
   content: {
-     flex: 1,
+    flex: 1,
     padding: 16,
   },
   bottomSection: {

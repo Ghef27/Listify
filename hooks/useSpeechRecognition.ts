@@ -1,72 +1,60 @@
-import { useState, useCallback } from 'react';
-import { Platform, Alert } from 'react-native';
-import * as Speech from 'expo-speech';
+import { useState, useEffect, useCallback } from 'react';
+import Voice, { SpeechResultsEvent, SpeechErrorEvent } from '@react-native-voice/voice';
 
 interface UseSpeechRecognitionReturn {
   isListening: boolean;
   transcript: string;
   startListening: () => void;
   stopListening: () => void;
-  resetTranscript: () => void;
 }
 
 export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
 
-  const startListening = useCallback(() => {
-    if (Platform.OS === 'web') {
-      // Web speech recognition
-      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-        const recognition = new SpeechRecognition();
-        
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
-        
-        recognition.onstart = () => {
-          setIsListening(true);
-        };
-        
-        recognition.onresult = (event: any) => {
-          const result = event.results[0][0].transcript;
-          setTranscript(result);
-          setIsListening(false);
-        };
-        
-        recognition.onerror = () => {
-          setIsListening(false);
-          Alert.alert('Error', 'Speech recognition failed. Please try again.');
-        };
-        
-        recognition.onend = () => {
-          setIsListening(false);
-        };
-        
-        recognition.start();
-      } else {
-        Alert.alert('Not Supported', 'Speech recognition is not supported in this browser.');
-      }
-    } else {
-      // For mobile platforms, we'll simulate speech recognition
-      // In a real app, you would use expo-speech or react-native-voice
+  useEffect(() => {
+    const onSpeechStart = () => {
       setIsListening(true);
-      
-      // Simulate speech recognition with a timeout
-      setTimeout(() => {
-        setIsListening(false);
-        Alert.alert('Speech Recognition', 'Speech recognition is not fully implemented for mobile. Please type your note instead.');
-      }, 2000);
+    };
+    const onSpeechEnd = () => {
+      setIsListening(false);
+    };
+    const onSpeechError = (e: SpeechErrorEvent) => {
+      console.error(e.error);
+      setIsListening(false);
+    };
+    const onSpeechResults = (e: SpeechResultsEvent) => {
+      if (e.value && e.value.length > 0) {
+        setTranscript(e.value[0]);
+      }
+      setIsListening(false); // ✅ This is the key fix
+    };
+
+    Voice.onSpeechStart = onSpeechStart;
+    Voice.onSpeechEnd = onSpeechEnd;
+    Voice.onSpeechError = onSpeechError;
+    Voice.onSpeechResults = onSpeechResults;
+
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, []);
+
+  const startListening = useCallback(async () => {
+    try {
+      setTranscript('');
+      await Voice.start('en-US');
+    } catch (e) {
+      console.error('startListening error', e);
     }
   }, []);
 
-  const stopListening = useCallback(() => {
-    setIsListening(false);
-  }, []);
-
-  const resetTranscript = useCallback(() => {
-    setTranscript('');
+  const stopListening = useCallback(async () => {
+    try {
+      await Voice.stop();
+    } catch (e) {
+      console.error('stopListening error', e);
+    }
   }, []);
 
   return {
@@ -74,6 +62,5 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     transcript,
     startListening,
     stopListening,
-    resetTranscript,
   };
 }

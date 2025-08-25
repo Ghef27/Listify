@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { X, Camera, Calendar } from 'lucide-react-native';
 import { Note } from '@/types';
-// 1. Import the image picker library
 import * as ImagePicker from 'expo-image-picker';
 
 interface AddBirthdayModalProps {
@@ -37,6 +36,7 @@ export function AddBirthdayModal({ visible, onClose, onSave, editingBirthday }: 
       setSelectedDay(editingBirthday.birthdayDay || null);
       setSelectedImage(editingBirthday.birthdayImage || null);
     } else if (!editingBirthday && visible) {
+      // Reset for new birthday
       setName('');
       setSelectedMonth(null);
       setSelectedDay(null);
@@ -50,7 +50,9 @@ export function AddBirthdayModal({ visible, onClose, onSave, editingBirthday }: 
   ];
 
   const getDaysInMonth = (month: number) => {
-    const daysInMonth = new Date(2024, month, 0).getDate();
+    // A small correction here to get the correct number of days
+    const year = new Date().getFullYear();
+    const daysInMonth = new Date(year, month, 0).getDate();
     return Array.from({ length: daysInMonth }, (_, i) => i + 1);
   };
 
@@ -64,31 +66,24 @@ export function AddBirthdayModal({ visible, onClose, onSave, editingBirthday }: 
   };
 
   const handleClose = () => {
-    setName('');
-    setSelectedMonth(null);
-    setSelectedDay(null);
-    setSelectedImage(null);
+    // No need to reset state here, the useEffect already handles it.
     onClose();
   };
 
-  // 2. Replace the old handleImageUpload function with this new one
   const handleImageUpload = async () => {
-    // Request permission to access the media library
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission needed', 'Sorry, we need camera roll permissions to make this work!');
       return;
     }
 
-    // Launch the image library
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Only allow images
-      allowsEditing: true, // Allow user to crop/edit the image
-      aspect: [1, 1], // Enforce a square aspect ratio
-      quality: 0.8, // Compress image to 80% quality
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
     });
     
-    // Set the selected image if the user didn't cancel
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
     }
@@ -214,9 +209,9 @@ export function AddBirthdayModal({ visible, onClose, onSave, editingBirthday }: 
   );
 }
 
-// ... Your styles remain the same
+// ... styles remain the same
 const styles = StyleSheet.create({
-  container: {
+    container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
