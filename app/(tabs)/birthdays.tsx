@@ -10,7 +10,7 @@ import {
   Animated
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Cake, Calendar, Plus, CreditCard as Edit3, Trash2 } from 'lucide-react-native';
+import { Cake, Calendar, Plus, PencilLine as Edit3, Trash2 } from 'lucide-react-native';
 import { StorageService } from '@/utils/storage';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
 import { AddBirthdayModal } from '@/components/AddBirthdayModal';
@@ -398,17 +398,17 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 0, // DISTANTA DINTRE BUTOANE BIRTHDAY
   },
   editButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#F3F4F6',
+    // backgroundColor: '#F3F4F6',
   },
   deleteButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#FEF2F2',
+    // backgroundColor: '#FEF2F2',
   },
   thisMonthBadge: {
     position: 'absolute',

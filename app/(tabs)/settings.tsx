@@ -157,7 +157,7 @@ export default function SettingsScreen() {
               </View>
               {list.name !== 'Birthdays' && (
                 <TouchableOpacity 
-                  style={styles.archiveButton}
+                  style={styles.archiveIconButton}
                   onPress={() => handleToggleArchive(list.name, list.archived || false)}
                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
@@ -197,7 +197,7 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          <View style={styles.infoCard}>
+          {/* <View style={styles.infoCard}>
             <Text style={styles.infoTitle}>How to use speech input:</Text>
             <Text style={styles.infoText}>
               • Tap the microphone button when adding a note{'\n'}
@@ -205,7 +205,7 @@ export default function SettingsScreen() {
               • Tap the microphone again to stop recording{'\n'}
               • Edit the recognized text before saving
             </Text>
-          </View>
+          </View> */}
         </View>
       </ScrollView>
 
@@ -291,7 +291,7 @@ export default function SettingsScreen() {
               <TouchableOpacity 
                 style={[
                   styles.confirmButton,
-                  selectedListForArchive?.isArchived ? styles.unarchiveButton : styles.archiveButton
+                  selectedListForArchive?.isArchived ? styles.unarchiveButton : styles.archiveConfirmButton
                 ]}
                 onPress={confirmArchiveAction}
               >
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 12,
   },
-  archiveButton: {
+  archiveIconButton: {
     padding: 8,
    backgroundColor: 'transparent',
   },
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
   },
-  archiveButton: {
+  archiveConfirmButton: {
     backgroundColor: '#F59E0B',
   },
   unarchiveButton: {
