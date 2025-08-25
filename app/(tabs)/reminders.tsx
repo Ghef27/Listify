@@ -184,13 +184,13 @@ export default function RemindersScreen() {
                 showReminderButton={true}
               />
 
-              <View style={styles.timerContainer}>
+              {/* <View style={styles.timerContainer}>
                 <ReminderTimer
                     reminderDate={new Date(note.reminderDate!)}
                     isExpired={note.reminderExpired}
                     onExpire={() => handleReminderExpire(note.id)}
                 />
-              </View>
+              </View> */}
             </View>
           ))
         )}
