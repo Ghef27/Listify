@@ -10,74 +10,81 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { X, Mic, MicOff, Send } from 'lucide-react-native';
+import { X, Mic, MicOff, Send, Save } from 'lucide-react-native';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
-import { ListData } from '@/types';
-import { StorageService } from '@/utils/storage';
+import { ListData, Note } from '@/types';
 
 interface AddNoteModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (text: string, listName: string) => void;
-  initialList?: string;
   lists: ListData[];
-  editingNote?: Note | null; 
+  editingNote?: Note | null;
+  initialList?: string;
 }
 
-export function AddNoteModal({ visible, onClose, onSave, initialList, lists }: AddNoteModalProps) {
+export function AddNoteModal({
+  visible,
+  onClose,
+  onSave,
+  lists,
+  editingNote,
+  initialList,
+}: AddNoteModalProps) {
   const [text, setText] = useState('');
+  const [selectedList, setSelectedList] = useState('');
   const scrollViewRef = React.useRef<ScrollView>(null);
-  const itemLayouts = React.useRef<Record<string, number>>({}); // ADDED FOR JUMP SCROLL
-  const [selectedList, setSelectedList] = useState(initialList || lists[0]?.name || '');
-  
-  const { 
-    isListening, 
-    transcript, 
-    startListening, 
-    stopListening, 
-    resetTranscript 
-  } = useSpeechRecognition();
+  const itemLayouts = React.useRef<Record<string, number>>({});
 
-  // Reload lists when modal becomes visible
+  const {
+    isListening,
+    transcript, // 👈 1. Get the transcript state from the hook
+    startListening,
+    stopListening,
+    resetTranscript
+  } = useSpeechRecognition(); // 👈 2. Remove the incorrect callback
+
+  // 👇 3. Use a useEffect to append the transcript to your text state
+  useEffect(() => {
+    if (transcript) {
+      setText(prevText => `${prevText}${prevText ? ' ' : ''}${transcript}`);
+      resetTranscript(); // Reset transcript after appending it
+    }
+  }, [transcript, resetTranscript]);
+
+
+  // This hook handles pre-filling the form for editing or resetting it for a new note
   useEffect(() => {
     if (visible) {
-      // Reset selected list to first available list when modal opens
-      const activeList = lists.find(list => !list.archived);
-      if (activeList && (!selectedList || lists.find(l => l.name === selectedList)?.archived)) {
-        setSelectedList(activeList.name);
+      if (editingNote) {
+        // We are editing: pre-fill the form
+        setText(editingNote.text);
+        setSelectedList(editingNote.listName);
+      } else {
+        // We are adding a new note: reset the form
+        const defaultList = lists.find(l => l.name === initialList && !l.archived);
+        if (defaultList) {
+          setSelectedList(defaultList.name);
+        } else {
+          const firstActiveList = lists.find(l => !l.archived);
+          setSelectedList(firstActiveList ? firstActiveList.name : '');
+        }
       }
     }
-  }, [visible, lists, selectedList]);
+  }, [visible, editingNote, lists, initialList]);
 
-useEffect(() => {
-  // Only run this effect if the modal is visible
-  if (!visible) return;
-
-  // Wait for the UI to settle after a list is selected or on initial render
-  setTimeout(() => {
-    if (scrollViewRef.current && selectedList) {
-      const xOffset = itemLayouts.current[selectedList];
-      if (xOffset !== undefined) {
-        scrollViewRef.current.scrollTo({ x: xOffset, animated: true });
+  // This hook handles scrolling the selected list into view
+  useEffect(() => {
+    if (!visible) return;
+    setTimeout(() => {
+      if (scrollViewRef.current && selectedList) {
+        const xOffset = itemLayouts.current[selectedList];
+        if (xOffset !== undefined) {
+          scrollViewRef.current.scrollTo({ x: xOffset, animated: true });
+        }
       }
-    }
-  }, 100);
-}, [selectedList, visible, lists]);
-
-//Added this from gemini for scroll jump
-
-useEffect(() => {
-    if (scrollViewRef.current && lists.length > 0 && initialList) {
-      const selectedIndex = lists.findIndex(list => list.name === initialList);
-      if (selectedIndex !== -1) {
-        // You may need to adjust this value based on the actual chip width
-        const itemWidth = 100;
-        const xOffset = selectedIndex * itemWidth;
-
-        scrollViewRef.current.scrollTo({ x: xOffset, animated: true });
-      }
-    }
-  }, [lists, initialList]);
+    }, 150);
+  }, [selectedList, visible]);
 
   const handleSave = () => {
     if (text.trim()) {
@@ -89,6 +96,7 @@ useEffect(() => {
 
   const handleClose = () => {
     setText('');
+    stopListening();
     resetTranscript();
     onClose();
   };
@@ -103,7 +111,7 @@ useEffect(() => {
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
@@ -111,39 +119,44 @@ useEffect(() => {
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <X size={24} color="#1F2937" />
           </TouchableOpacity>
-          <Text style={styles.title}>Add Note</Text>
-          <View style={styles.headerSpacer} />
+          <Text style={styles.title}>{editingNote ? 'Edit Note' : 'Add Note'}</Text>
+          {editingNote ? (
+            <TouchableOpacity onPress={handleSave} disabled={!text.trim()}>
+              <Save size={24} color={text.trim() ? "#14B8A6" : "#9CA3AF"} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.headerSpacer} />
+          )}
         </View>
 
         <View style={styles.content}>
           <Text style={styles.sectionTitle}>Select List</Text>
-         <ScrollView 
-  ref={scrollViewRef}
-  horizontal 
-  showsHorizontalScrollIndicator={false} 
-  style={styles.listsContainer}
->
-            {lists.filter(list => !list.archived).map((list) => (
-<TouchableOpacity
-  key={list.name}
-  onLayout={(event) => {
-    // This correctly gets the x position of the chip
-    itemLayouts.current[list.name] = event.nativeEvent.layout.x;
-  }}
-  style={[
-    styles.listChip,
-    { borderColor: list.color },
-    selectedList === list.name && { backgroundColor: list.color }
-  ]}
-  onPress={() => setSelectedList(list.name)}
->
-  <Text style={[
-    styles.listChipText,
-    selectedList === list.name && styles.listChipTextSelected
-  ]}>
-    {list.name}
-  </Text>
-</TouchableOpacity>
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.listsContainer}
+          >
+            {lists.filter(list => !list.archived && list.name !== 'Birthdays').map((list) => (
+              <TouchableOpacity
+                key={list.name}
+                onLayout={(event) => {
+                  itemLayouts.current[list.name] = event.nativeEvent.layout.x;
+                }}
+                style={[
+                  styles.listChip,
+                  { borderColor: list.color },
+                  selectedList === list.name && { backgroundColor: list.color }
+                ]}
+                onPress={() => setSelectedList(list.name)}
+              >
+                <Text style={[
+                  styles.listChipText,
+                  selectedList === list.name && styles.listChipTextSelected
+                ]}>
+                  {list.name}
+                </Text>
+              </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
@@ -160,9 +173,9 @@ useEffect(() => {
               textAlignVertical="top"
             />
           </View>
-          
+
           <View style={styles.bottomButtons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.micButton, isListening && styles.micButtonActive]}
               onPress={toggleListening}
             >
@@ -172,15 +185,15 @@ useEffect(() => {
                 <Mic size={24} color="#14B8A6" />
               )}
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              onPress={handleSave} 
+
+            <TouchableOpacity
+              onPress={handleSave}
               style={[styles.saveButtonBottom, !text.trim() && styles.saveButtonDisabled]}
               disabled={!text.trim()}
             >
               <Send size={20} color={text.trim() ? "#fff" : "#9CA3AF"} />
               <Text style={[styles.saveButtonText, !text.trim() && styles.saveButtonTextDisabled]}>
-                Save Note
+                {editingNote ? 'Update Note' : 'Save Note'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -191,7 +204,7 @@ useEffect(() => {
 }
 
 const styles = StyleSheet.create({
-  container: {
+    container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
@@ -217,12 +230,15 @@ const styles = StyleSheet.create({
     width: 40,
   },
   content: {
-    flex: 1,
+     flex: 1,
     padding: 16,
   },
   bottomSection: {
     padding: 16,
-    paddingBottom: 32,
+    paddingTop: 0,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    backgroundColor: '#fff',
   },
   inputContainer: {
     marginBottom: 16,
@@ -231,10 +247,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
+    paddingTop: 16,
     fontSize: 16,
     minHeight: 120,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    maxHeight: 250,
   },
   bottomButtons: {
     flexDirection: 'row',
@@ -242,9 +258,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   micButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
@@ -281,13 +297,12 @@ const styles = StyleSheet.create({
   },
   listsContainer: {
     flexDirection: 'row',
-    marginBottom: 24,
   },
   listChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 1.5,
     marginRight: 8,
     backgroundColor: '#fff',
   },

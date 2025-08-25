@@ -8,6 +8,7 @@ import {
   TouchableOpacity
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router'; // 👈 1. Import useFocusEffect
 import { Search, X } from 'lucide-react-native';
 import { StorageService } from '@/utils/storage';
 import { NoteItem } from '@/components/NoteItem';
@@ -23,7 +24,6 @@ export default function SearchScreen() {
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
 
-  // State for editing notes
   const [lists, setLists] = useState<ListData[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
@@ -35,9 +35,13 @@ export default function SearchScreen() {
     setLists(listsData);
   }, []);
 
-  useEffect(() => {
-    loadNotes();
-  }, [loadNotes]);
+  // 👇 2. Replace the old useEffect with useFocusEffect
+  useFocusEffect(
+    useCallback(() => {
+      // This code will now run every time the Search screen comes into focus
+      loadNotes();
+    }, [loadNotes])
+  );
 
   useEffect(() => {
     if (searchQuery.trim()) {

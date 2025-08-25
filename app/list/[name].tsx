@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
   RefreshControl,
   TouchableOpacity,
   Modal,
   TextInput,
   Alert
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Settings, X, Save } from 'lucide-react-native';
 import { StorageService } from '@/utils/storage';
@@ -21,22 +21,25 @@ import { ReminderModal } from '@/components/ReminderModal';
 import { Note, ListData } from '@/types';
 
 export default function ListScreen() {
+  const insets = useSafeAreaInsets();
   const { name } = useLocalSearchParams<{ name: string }>();
   const router = useRouter();
   const [notes, setNotes] = useState<Note[]>([]);
   const [lists, setLists] = useState<ListData[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [showListEditModal, setShowListEditModal] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [selectedNoteForReminder, setSelectedNoteForReminder] = useState<Note | null>(null);
   const [editListName, setEditListName] = useState('');
   const [editListColor, setEditListColor] = useState('#2563EB');
   const [refreshing, setRefreshing] = useState(false);
 
+  // State for editing notes
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
+
   const colors = [
-    '#14B8A6','#10B981', '#059669','#047857','#86e546ff','#f80303ff','#DC2626', '#DB2777', '#BE185D','#B45309','#D97706','#CA8A04', '#d9c87aff',
-    '#e0e546ff','#46b5e5ff','#7C3AED',    '#4F46E5',   '#a546e5ff',    '#081401ff' 
-     
+    '#14B8A6', '#10B981', '#059669', '#047857', '#86e546ff', '#f80303ff', '#DC2626', '#DB2777', '#BE185D', '#B45309', '#D97706', '#CA8A04', '#d9c87aff',
+    '#e0e546ff', '#46b5e5ff', '#7C3AED', '#4F46E5', '#a546e5ff', '#081401ff'
   ];
 
   const currentList = lists.find(list => list.name === name);
@@ -47,27 +50,25 @@ export default function ListScreen() {
     const allNotes = await StorageService.getNotes();
     const listsData = await StorageService.getLists();
     setLists(listsData);
-    
+
     const listNotes = allNotes.filter(note => note.listName === name);
-    
-    // Separate notes by priority: expired reminders first, then incomplete, then completed
-    const expiredReminderNotes = listNotes.filter(note => 
-      !note.completed && 
-      note.reminderDate && 
+
+    const expiredReminderNotes = listNotes.filter(note =>
+      !note.completed &&
+      note.reminderDate &&
       new Date(note.reminderDate) < new Date()
     ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-    
-    const incompleteNotes = listNotes.filter(note => 
-      !note.completed && 
+
+    const incompleteNotes = listNotes.filter(note =>
+      !note.completed &&
       (!note.reminderDate || new Date(note.reminderDate) >= new Date())
     ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-    
+
     const completedNotes = listNotes.filter(note => note.completed)
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-    
-    // Order: expired reminders first, then incomplete notes, then completed notes
+
     const sortedNotes = [...expiredReminderNotes, ...incompleteNotes, ...completedNotes];
-    
+
     setNotes(sortedNotes);
   }, [name]);
 
@@ -80,6 +81,17 @@ export default function ListScreen() {
     await loadNotes();
     setRefreshing(false);
   }, [loadNotes]);
+
+  const handleEditNote = (note: Note) => {
+    setEditingNote(note);
+    setShowAddModal(true);
+  };
+
+  const handleUpdateNote = async (text: string, listName: string) => {
+    if (!editingNote) return;
+    await StorageService.updateNote(editingNote.id, { text, listName });
+    await loadNotes();
+  };
 
   const handleToggleComplete = async (noteId: string) => {
     const note = notes.find(n => n.id === noteId);
@@ -106,13 +118,11 @@ export default function ListScreen() {
 
   const handleSaveReminder = async (reminderDate: Date) => {
     if (!selectedNoteForReminder) return;
-
     try {
       await StorageService.setNoteReminder(
         selectedNoteForReminder.id,
         reminderDate
       );
-
       await loadNotes();
       setSelectedNoteForReminder(null);
     } catch (error) {
@@ -124,15 +134,15 @@ export default function ListScreen() {
     if (currentList) {
       setEditListName(currentList.name);
       setEditListColor(currentList.color);
-      setShowEditModal(true);
+      setShowListEditModal(true);
     }
   };
 
   const handleSaveListEdit = async () => {
     if (editListName.trim() && name) {
       await StorageService.updateList(name, editListName.trim(), editListColor);
-      setShowEditModal(false);
-      
+      setShowListEditModal(false);
+
       if (editListName.trim() !== name) {
         Alert.alert('List Updated', 'List name has been changed.', [
           { text: 'OK', onPress: () => router.back() }
@@ -144,7 +154,7 @@ export default function ListScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft size={24} color="#1F2937" />
@@ -158,7 +168,7 @@ export default function ListScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -179,6 +189,7 @@ export default function ListScreen() {
               onToggleComplete={handleToggleComplete}
               onDelete={handleDeleteNote}
               onSetReminder={handleSetReminder}
+              onEdit={handleEditNote}
               showDeleteButton={true}
               showReminderButton={true}
             />
@@ -190,8 +201,12 @@ export default function ListScreen() {
 
       <AddNoteModal
         visible={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSave={handleAddNote}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingNote(null);
+        }}
+        onSave={editingNote ? handleUpdateNote : handleAddNote}
+        editingNote={editingNote}
         initialList={name}
         lists={lists}
       />
@@ -206,10 +221,10 @@ export default function ListScreen() {
         noteText={selectedNoteForReminder?.text || ''}
       />
 
-      <Modal visible={showEditModal} animationType="slide" presentationStyle="pageSheet">
+      <Modal visible={showListEditModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowEditModal(false)}>
+            <TouchableOpacity onPress={() => setShowListEditModal(false)}>
               <X size={24} color="#1F2937" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Edit List</Text>
@@ -245,7 +260,7 @@ export default function ListScreen() {
           </View>
         </SafeAreaView>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
