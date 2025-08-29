@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "listify",
+    "name": "Listify",
     "slug": "listify",
     "version": "1.0.0",
     "platforms": [
@@ -29,7 +29,7 @@
     },
  "plugins": [
   "expo-router",
-  "expo-font",
+
 
   "expo-splash-screen",
   [

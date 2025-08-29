@@ -1,17 +1,36 @@
-import { useEffect } from 'react';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useFrameworkReady } from '@/hooks/useFrameworkReady';
+import { useEffect, useState } from 'react';
+import { Slot, SplashScreen } from 'expo-router';
+import { loadAsync as loadFontsAsync } from 'expo-font';
+
+// Prevent the splash screen from auto-hiding before we are ready.
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  useFrameworkReady();
+  const [isReady, setIsReady] = useState(false);
 
-  return (
-    <>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="+not-found" />
-      </Stack>
-<StatusBar style="auto" translucent={true} />
-    </>
-  );
+  useEffect(() => {
+    async function prepare() {
+      try {
+        // Add any font loading or other initial setup tasks here
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setIsReady(true);
+      }
+    }
+    prepare();
+  }, []);
+
+  useEffect(() => {
+    if (isReady) {
+      SplashScreen.hideAsync();
+    }
+  }, [isReady]);
+
+  if (!isReady) {
+    return null;
+  }
+
+  // This <Slot /> will render the (tabs) layout as the root.
+  return <Slot />;
 }
